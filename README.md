@@ -8,11 +8,6 @@ The goal of this project was to examine the historical vote for the US President
 - Understand the characteristics of counties that vote similarly
 - Predict the results of the 2024 US Presidential election at a county level
 
-### Link
-
-[US Elections Data Analysis App](https://us-elections-dash-app-jz.herokuapp.com/)
-- might need to refresh a few times
-
 ### Data
 - [Github - County level results (1960-2016)](https://github.com/cilekagaci/us-presidential-county-1960-2016)
 - [Github - County level results (2020)](https://github.com/tonmcg/US_County_Level_Election_Results_08-20)
