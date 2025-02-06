@@ -2,6 +2,7 @@
 title: "Evaluating 2024 US Presidential Election Predictions"
 format: html
 editor: visual
+code-line-numbers: true
 ---
 
 ## Purpose
@@ -14,20 +15,93 @@ For reference:
 
 <https://business-science.github.io/modeltime/>
 
-```{r loading_data}
+```{r loading_data, include = FALSE, echo = FALSE}
 library(readxl)
 library(tidyverse)
 library(lubridate)
 library(timeDate)
 library(tidyr)
 library(DT)
+library(scales)
 
 #-----Load data
 url <- "https://raw.githubusercontent.com/statzenthusiast921/US_Elections_Project/refs/heads/main/Data/compare2024.csv"
 df <- read_csv(url, show_col_types = FALSE)
 ```
 
-```{r preprocess}
+```{r fix_a_few_state_numbers, include = FALSE, echo = FALSE}
+#----- Add in missing data (Connecticut, DC, good chunk of Virginia)
+CT <- data.frame(
+  state_name = rep('Connecticut', 8), 
+  county_name = c('Fairfield County', 'Hartford County', 'Litchfield County', 
+                  'Middlesex County', 'New Haven County', 'New London', 
+                  'Tolland County', 'Windham County'),
+  fips_code_lz = c('09001','09003','09005','09007','09009','09011','09013','09015'),
+  dem_votes_actuals = c(267019,259366,47940,54173,218981,76190,43311,25073),
+  dem_votes_preds = c(264185.234, 268797.8,46268.6935,58758.8975,226382.274, 76679.459, 48004.6578, 23254.8234),
+  gop_votes_actuals = c(178263,162572,56452,41654,171435,58858,36773,30911),
+  gop_votes_preds = c(195603.214,142487.195,58026.9283,40798.4047,154586.184,54107.9996, 39271.5273, 29948.0548)
+)
+
+DC <- data.frame(
+  state_name = 'District of Columbia',
+  county_name = 'District of Columbia',
+  fips_code_lz = '11001',
+  dem_votes_actuals = 294185,
+  dem_votes_preds = 328732.739,
+  gop_votes_actuals = 21076,
+  gop_votes_preds = 20859.1042
+)
+
+
+
+df <- df |> rbind(CT, DC)
+
+```
+
+```{r add_in_missing_virgina_counties, echo=FALSE, include = FALSE}
+
+va_actuals_2024 <- read_csv('/Users/jonzimmerman/Desktop/Data Projects/Elections Project/Data/2024_US_County_Level_Presidential_Results.csv',show_col_types = FALSE) |>
+  filter(state_name == "Virginia") |>
+  mutate(
+    county_name = case_when(
+      grepl('city', county_name, ignore.case = TRUE) ~ str_to_title(county_name),
+      TRUE ~ county_name
+    )
+  )
+
+va_preds_2024 <-read_csv('/Users/jonzimmerman/Desktop/preds_2024_df.csv',show_col_types = FALSE) |>
+  filter(state_name == "Virginia" & county_name != "Bedford City")
+  
+#----Check if dataframes are aligned by county
+
+check_actuals <- va_actuals_2024 |> select(county_name) |> rename(col1 = county_name)
+check_preds <- va_preds_2024 |> select(county_name) |> rename(col2 = county_name)
+check <- cbind(check_actuals, check_preds) |>
+  mutate(
+    match = (col1 == col2)
+  )
+  
+VA <- data.frame(
+  state_name = rep('Virginia', 133),
+  county_name = va_preds_2024$county_name,
+  fips_code_lz = va_preds_2024$fips_code,
+  dem_votes_actuals = va_actuals_2024$dem_votes,
+  dem_votes_preds = va_preds_2024$dem_votes,
+  gop_votes_actuals = va_actuals_2024$gop_votes,
+  gop_votes_preds = va_preds_2024$gop_votes
+)
+
+#Add in Bedford City
+
+
+df <- df |>
+  filter(!state_name == "Virginia") |>
+  bind_rows(VA)
+
+```
+
+```{r preprocess, include = FALSE, echo = FALSE}
 #----- Create extra columns
 df <- df |>
   mutate(
@@ -58,38 +132,45 @@ matrix <- matrix(fill_in_values, nrow = 2, byrow = TRUE)
 
 #----- Convert to a data frame
 comparison <- as.data.frame(matrix) |> cbind(c('DEM','GOP'))
-colnames(comparison) <- c('Actuals','Predictions','Party')
+colnames(comparison) <- c('Actuals','Predictions','Grouping')
 
 ```
 
 ## Overall Performance
 
-```{r performance}
+```{r performance, echo = FALSE}
 comparison <- comparison |>
-  relocate(Party, .before = Actuals) |>
+  relocate(Grouping, .before = Actuals) |>
   relocate(Predictions, .before = Actuals) |>
   mutate(
-    Diff = round(Actuals - Predictions,0),
-    PercDiff = Diff / Predictions,
+    Difference = round(Actuals - Predictions,0),
+    PercDifference = Difference / Predictions,
     Predictions = round(Predictions,0)
     )
 
 margin_row <- data.frame(
-  Party = 'Margin',
+  Grouping = 'Margin',
   Predictions = comparison$Predictions[1] - comparison$Predictions[2],
   Actuals = comparison$Actuals[1] - comparison$Actuals[2],
-  Diff = comparison$Diff[1] - comparison$Diff[2],
-  PercDiff = NA
+  Difference = comparison$Diff[1] - comparison$Diff[2],
+  PercDifference = NA_real_
   )
 
 comparison_table <- rbind(comparison, margin_row) |>
   mutate(
-    PercDiff = case_when(
-      is.na(PercDiff) ~ Diff / Predictions,
-      TRUE ~ PercDiff
+    PercDifference = case_when(
+      is.na(PercDifference) ~ Difference / Predictions,
+      TRUE ~ PercDifference
       )
-    )
-datatable(comparison_table, options = list(dom = 't')) |>
+    ) |>
+  rename(`% Difference` = PercDifference)
+
+datatable(
+  comparison_table, 
+  options = list(dom = 't'),
+  caption = htmltools::tags$caption(style = 'font-size: 20px; font-weight: bold;', 
+                                 'Overall 2024 Performance'),
+) |>
  formatStyle(
     columns = 1:3,  
     background = styleInterval(1, c("white", "white")),
@@ -104,13 +185,17 @@ datatable(comparison_table, options = list(dom = 't')) |>
    formatPercentage(
     columns = 5,  
     digits = 2  
-  ) 
+  ) |>
+  formatStyle(
+    columns = c("Difference","% Difference"),  
+    color = styleInterval(0, c("red", "green"))  
+  )
 ```
 
 ## State Level Performance
 
-```{r state_level_peformance}
-#Missing Alaska, DC, Connecticut
+```{r state_level_peformance, include = FALSE}
+#Missing Alaska
 state_df <- df |>
   group_by(state_name) |>
   summarise(
@@ -126,16 +211,23 @@ state_df <- df |>
     gop_perc_diff = gop_diff / gop_votes_preds,
     margin_actual = dem_votes_actuals - gop_votes_actuals,
     margin_pred = dem_votes_preds - gop_votes_preds,
-    margin_perc_diff = (margin_actual - margin_pred) / margin_pred
+    margin_diff = margin_actual - margin_pred,
+    margin_perc_diff = margin_diff / margin_pred,
+    state_winner = case_when(
+      dem_votes_actuals > gop_votes_actuals ~ "DEM",
+      TRUE ~ "GOP"
+    )
   )
   
-
+rownames(state_df)
+state_check <- state_df |> select(state_name, dem_votes_actuals, gop_votes_actuals)
+#Missing quite a bit in Florida, illinois, indiana, louisiana, maryland
 ```
 
 ```{r make_tables_by_party, echo=FALSE, include = FALSE}
 
 state_dem <- state_df |>
-  select(state_name, dem_votes_actuals, dem_votes_preds, dem_diff, dem_perc_diff) |>
+  select(state_name, dem_votes_actuals, dem_votes_preds, dem_diff, dem_perc_diff, state_winner) |>
   mutate(
     abs_perc_diff = abs(dem_perc_diff)
   ) |>
@@ -144,12 +236,13 @@ state_dem <- state_df |>
     Actuals = dem_votes_actuals,
     Predictions = dem_votes_preds,
     Difference = dem_diff,
-    `% Diff` = dem_perc_diff,
-    `Abs % Diff` = abs_perc_diff
+    `% Difference` = dem_perc_diff,
+    `Abs % Difference` = abs_perc_diff,
+    `State Winner` = state_winner
   )
 
 state_gop <- state_df |>
-  select(state_name, gop_votes_actuals, gop_votes_preds, gop_diff, gop_perc_diff) |>
+  select(state_name, gop_votes_actuals, gop_votes_preds, gop_diff, gop_perc_diff, state_winner) |>
   mutate(
     abs_perc_diff = abs(gop_perc_diff)
   ) |>
@@ -159,11 +252,12 @@ state_gop <- state_df |>
     Predictions = gop_votes_preds,
     Difference = gop_diff,
     `% Difference` = gop_perc_diff,
-    `Abs % Diff` = abs_perc_diff
+    `Abs % Difference` = abs_perc_diff,
+    `State Winner` = state_winner
   )
   
 state_margin <- state_df |>
-  select(state_name, margin_actual, margin_pred, margin_perc_diff) |>
+  select(state_name, margin_actual, margin_pred, margin_diff, margin_perc_diff, state_winner) |>
   mutate(
     abs_perc_diff = abs(margin_perc_diff)
   ) |>
@@ -171,26 +265,30 @@ state_margin <- state_df |>
     State = state_name,
     `Actual Margin` = margin_actual,
     `Predicted Margin` = margin_pred,
+    `Margin Difference` = margin_diff,
     `% Difference` = margin_perc_diff,
-    `Abs % Diff` = abs_perc_diff
+    `Abs % Difference` = abs_perc_diff,
+    `State Winner` = state_winner
   )
   
 
 ```
 
-**DEM Prediction Performance**
+```{r state_table_dem, echo = FALSE}
 
-```{r state_table_dem}
-
-datatable(state_dem , options = list(
-  dom = 't',        
-  order = list(list(6, "asc")),
-
-  scrollX = TRUE, 
-  columnDefs = list(list(targets = "_all", visible = TRUE)),
-  pageLength = nrow(state_dem)  # Show all rows (set page length to total rows)
-  ))|>
-
+datatable(state_dem |> select(-c(`State Winner`)), 
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; font-size: 20px; font-weight: bold;', 
+            'Statewide 2024 Democratic Performance'
+          ),
+          options = list(
+            dom = 't',        
+            order = list(list(6, "asc")),
+            scrollX = TRUE, 
+            columnDefs = list(list(targets = "_all", visible = TRUE)),
+            pageLength = nrow(state_dem)
+          )
+        )|>
  formatStyle(
     columns = 1:ncol(state_dem),
     background = styleInterval(1, c("white", "white")),
@@ -207,24 +305,47 @@ datatable(state_dem , options = list(
     digits = 2
   ) |>
   formatStyle(
-    columns = c("Difference","% Diff"),  
+    columns = c("Difference","% Difference"),  
     color = styleInterval(0, c("red", "green"))  
   )
 
 
 ```
 
-**GOP Prediction Performance**
+```{r dem_scatterplot, echo = FALSE, message = FALSE, warning = FALSE}
 
-```{r state_table_gop}
-datatable(state_gop , options = list(
-  dom = 't', 
-  order = list(list(6, "asc")),
+plotly::ggplotly(
+  ggplot(state_dem, aes(x = Predictions, y = Actuals, color = `State Winner`)) + 
+    geom_point(aes(text = paste("State:", State, 
+                                "<br>Actuals:", scales::comma(Actuals), 
+                                "<br>Predictions:", scales::comma(Predictions)))) +
+    scale_color_manual(values = c("DEM" = "blue", "GOP" = "red")) +
+    scale_x_continuous(labels = scales::label_number(scale = 1e-6, suffix = "M")) +
+    scale_y_continuous(labels = scales::label_number(scale = 1e-6, suffix = "M")) +
+    ggtitle('DEM 2024 Votes: Actuals vs. Predictions') +
+    geom_smooth(aes(group = 1), method = "loess", color = "black", se=FALSE, linetype = 'dashed')
+,tooltip = "text") |>
+  plotly::layout(
+    title = list(text = "2024 Actual vs. Predicted Vote Margin",  x = 0.5, xanchor = "center"),
+    legend = list(orientation = "h", x = 0.5, y = -0.2, xanchor = "center"))
 
-  scrollX = TRUE, 
-  columnDefs = list(list(targets = "_all", visible = TRUE)),
-  pageLength = nrow(state_gop)  # Show all rows (set page length to total rows)
-  ))|>
+
+```
+
+```{r state_table_gop, echo = FALSE}
+datatable(state_gop |> select(-c(`State Winner`)), 
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; font-size: 20px; font-weight: bold;', 
+            'Statewide 2024 Republican Performance'
+          ),
+          options = list(
+            dom = 't', 
+            order = list(list(6, "asc")),
+            scrollX = TRUE, 
+            columnDefs = list(list(targets = "_all", visible = TRUE)),
+            pageLength = nrow(state_gop)  
+          )
+        )|>
 
  formatStyle(
     columns = 1:ncol(state_gop),
@@ -248,18 +369,38 @@ datatable(state_gop , options = list(
 
 ```
 
-**Performance on the Margin**
+```{r gop_scatterplot, echo = FALSE, message = FALSE, warning = FALSE}
+plotly::ggplotly(
+  ggplot(state_gop, aes(x = Predictions, y = Actuals, color = `State Winner`)) + 
+    geom_point(aes(text = paste("State:", State, 
+                                "<br>Actuals:", scales::comma(Actuals), 
+                                "<br>Predictions:", scales::comma(Predictions)))) +
+    scale_color_manual(values = c("DEM" = "blue", "GOP" = "red")) +
+    scale_x_continuous(labels = scales::label_number(scale = 1e-6, suffix = "M")) +
+    scale_y_continuous(labels = scales::label_number(scale = 1e-6, suffix = "M")) +
+    ggtitle('GOP 2024 Votes: Actuals vs. Predictions') +
+    geom_smooth(aes(group = 1), method = "loess", color = "black", se=FALSE, linetype = 'dashed')
+,tooltip = "text") |>
+  plotly::layout(
+    title = list(text = "2024 Actual vs. Predicted Vote Margin",  x = 0.5, xanchor = "center"),
+    legend = list(orientation = "h", x = 0.5, y = -0.2, xanchor = "center"))
 
-```{r margin_performance}
-datatable(state_margin , options = list(
-  dom = 't', 
-  order = list(list(5, "asc")),
+```
 
-  scrollX = TRUE, 
-  columnDefs = list(list(targets = "_all", visible = TRUE)),
-  pageLength = nrow(state_margin)  # Show all rows (set page length to total rows)
-  ))|>
-
+```{r margin_performance, echo = FALSE}
+datatable(state_margin |> select(-c(`State Winner`)), 
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; font-size: 20px; font-weight: bold;', 
+            'Statewide 2024 Performance'
+          ),
+          options = list(
+            dom = 't', 
+            order = list(list(6, "asc")),
+            scrollX = TRUE, 
+            columnDefs = list(list(targets = "_all", visible = TRUE)),
+            pageLength = nrow(state_margin) 
+          )
+        )|>
  formatStyle(
     columns = 1:ncol(state_margin),
     background = styleInterval(1, c("white", "white")),
@@ -267,32 +408,49 @@ datatable(state_margin , options = list(
     color = styleInterval(1, c("black", "black"))
   ) |>
   formatCurrency(
-    columns = 2:3,
+    columns = c(2:4),
     currency = "",
     digits = 0
   ) |>
    formatPercentage(
-    columns = 4:5,
+    columns = c(5:6),
     digits = 2
   ) |>
   formatStyle(
-    columns = c("Actual Margin","Predicted Margin","% Difference"),  
+    columns = c("Actual Margin","Predicted Margin","Margin Difference","% Difference"),  
     color = styleInterval(0, c("red", "green"))  
   )
 
 ```
 
-```{r}
+The most consequential states in determining the election were Michigan, Wisconsin, Nevada, Pennsylvania, and Arizona. All 5 states were predicted to have a positive margin (ie: DEM \> GOP), but came in with a negative margin. This is displayed in the bottom right quadrant.
+
+```{r margin_scatterplot, echo = FALSE, message = FALSE, warning = FALSE}
+
+plotly::ggplotly(
+  ggplot(
+    state_margin, aes(x = `Predicted Margin`, y = `Actual Margin`, color = `State Winner`)) +
+    geom_point(aes(text = paste("State:", State, 
+                                "<br>Actual Margin:", scales::comma(`Actual Margin`), 
+                                "<br>Predicted Margin:", scales::comma(`Predicted Margin`)))) +
+  geom_vline(xintercept = 0, linetype = "dashed") + 
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    scale_color_manual(values = c("DEM" = "blue", "GOP" = "red")) +
+    ggtitle('2024 Actual vs. Predicted Vote Margin')  +
+    scale_x_continuous(labels = label_number(scale = 1e-6, suffix = "M")) +
+    scale_y_continuous(labels = label_number(scale = 1e-6, suffix = "M")) 
+, tooltip = 'text') |>
+  plotly::layout(
+    title = list(text = "2024 Actual vs. Predicted Vote Margin",  x = 0.5, xanchor = "center"),
+    legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.2))
+
+
+
+
 
 ```
 
-```{r}
-
-```
-
-```{r}
-
-```
+## County Level Performance
 
 ```{r}
 
