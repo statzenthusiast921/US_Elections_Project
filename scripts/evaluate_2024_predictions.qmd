@@ -168,8 +168,11 @@ comparison_table <- rbind(comparison, margin_row) |>
 datatable(
   comparison_table, 
   options = list(dom = 't'),
-  caption = htmltools::tags$caption(style = 'font-size: 20px; font-weight: bold;', 
-                                 'Overall 2024 Performance'),
+
+     caption = htmltools::tags$caption(
+            style = 'caption-side: top; font-size: 20px; font-weight: bold;', 
+            'Overall 2024 Performance'
+          ),
 ) |>
  formatStyle(
     columns = 1:3,  
@@ -282,11 +285,11 @@ datatable(state_dem |> select(-c(`State Winner`)),
             'Statewide 2024 Democratic Performance'
           ),
           options = list(
-            dom = 't',        
+            dom = 'tp',        
             order = list(list(6, "asc")),
             scrollX = TRUE, 
             columnDefs = list(list(targets = "_all", visible = TRUE)),
-            pageLength = nrow(state_dem)
+            pageLength = 10
           )
         )|>
  formatStyle(
@@ -326,7 +329,7 @@ plotly::ggplotly(
     geom_smooth(aes(group = 1), method = "loess", color = "black", se=FALSE, linetype = 'dashed')
 ,tooltip = "text") |>
   plotly::layout(
-    title = list(text = "2024 Actual vs. Predicted Vote Margin",  x = 0.5, xanchor = "center"),
+    title = list(text = "2024 DEM Actuals vs. Predicted Vote Margin",  x = 0.5, xanchor = "center"),
     legend = list(orientation = "h", x = 0.5, y = -0.2, xanchor = "center"))
 
 
@@ -339,11 +342,11 @@ datatable(state_gop |> select(-c(`State Winner`)),
             'Statewide 2024 Republican Performance'
           ),
           options = list(
-            dom = 't', 
+            dom = 'tp', 
             order = list(list(6, "asc")),
             scrollX = TRUE, 
             columnDefs = list(list(targets = "_all", visible = TRUE)),
-            pageLength = nrow(state_gop)  
+            pageLength = 10  
           )
         )|>
 
@@ -378,11 +381,10 @@ plotly::ggplotly(
     scale_color_manual(values = c("DEM" = "blue", "GOP" = "red")) +
     scale_x_continuous(labels = scales::label_number(scale = 1e-6, suffix = "M")) +
     scale_y_continuous(labels = scales::label_number(scale = 1e-6, suffix = "M")) +
-    ggtitle('GOP 2024 Votes: Actuals vs. Predictions') +
     geom_smooth(aes(group = 1), method = "loess", color = "black", se=FALSE, linetype = 'dashed')
 ,tooltip = "text") |>
   plotly::layout(
-    title = list(text = "2024 Actual vs. Predicted Vote Margin",  x = 0.5, xanchor = "center"),
+    title = list(text = "GOP 2024 Actuals vs. Predicted Vote Margin",  x = 0.5, xanchor = "center"),
     legend = list(orientation = "h", x = 0.5, y = -0.2, xanchor = "center"))
 
 ```
@@ -394,11 +396,11 @@ datatable(state_margin |> select(-c(`State Winner`)),
             'Statewide 2024 Performance'
           ),
           options = list(
-            dom = 't', 
+            dom = 'tp', 
             order = list(list(6, "asc")),
             scrollX = TRUE, 
             columnDefs = list(list(targets = "_all", visible = TRUE)),
-            pageLength = nrow(state_margin) 
+            pageLength = 10 
           )
         )|>
  formatStyle(
@@ -423,7 +425,7 @@ datatable(state_margin |> select(-c(`State Winner`)),
 
 ```
 
-The most consequential states in determining the election were Michigan, Wisconsin, Nevada, Pennsylvania, and Arizona. All 5 states were predicted to have a positive margin (ie: DEM \> GOP), but came in with a negative margin. This is displayed in the bottom right quadrant.
+The most consequential states in determining the election were Arizona, Michigan, Nevada, Pennsylvania, and Wisconsin. All 5 states were predicted to have a positive margin (ie: DEM \> GOP), but came in with a negative margin. This is displayed in the bottom right quadrant.
 
 ```{r margin_scatterplot, echo = FALSE, message = FALSE, warning = FALSE}
 
@@ -436,12 +438,14 @@ plotly::ggplotly(
   geom_vline(xintercept = 0, linetype = "dashed") + 
     geom_hline(yintercept = 0, linetype = "dashed") +
     scale_color_manual(values = c("DEM" = "blue", "GOP" = "red")) +
-    ggtitle('2024 Actual vs. Predicted Vote Margin')  +
+    ggtitle('2024 Actuals vs. Predicted Vote Margin')  +
     scale_x_continuous(labels = label_number(scale = 1e-6, suffix = "M")) +
-    scale_y_continuous(labels = label_number(scale = 1e-6, suffix = "M")) 
+    scale_y_continuous(labels = label_number(scale = 1e-6, suffix = "M")) +
+    labs(color = "State Winner") 
+
 , tooltip = 'text') |>
   plotly::layout(
-    title = list(text = "2024 Actual vs. Predicted Vote Margin",  x = 0.5, xanchor = "center"),
+    title = list(text = "2024 Actuals vs. Predicted Vote Margin",  x = 0.5, xanchor = "center"),
     legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.2))
 
 
@@ -450,56 +454,637 @@ plotly::ggplotly(
 
 ```
 
-## County Level Performance
+## County Level Performance for swing states
 
-```{r}
+```{r arizona_counties, include = FALSE}
+
+create_base_df <- function(state){
+  base_df <- df |>
+    filter(state_name == state) |>
+    group_by(county_name) |>
+    summarise(
+      dem_votes_actuals = sum(dem_votes_actuals),
+      dem_votes_preds = sum(dem_votes_preds),
+      gop_votes_actuals = sum(gop_votes_actuals),
+      gop_votes_preds = sum(gop_votes_preds)
+    ) |>
+    mutate(
+      dem_diff = dem_votes_actuals - dem_votes_preds,
+      dem_perc_diff = dem_diff / dem_votes_preds,
+      gop_diff = gop_votes_actuals - gop_votes_preds,
+      gop_perc_diff = gop_diff / gop_votes_preds,
+      margin_actual = dem_votes_actuals - gop_votes_actuals,
+      margin_pred = dem_votes_preds - gop_votes_preds,
+      margin_diff = margin_actual - margin_pred,
+      margin_perc_diff = margin_diff / margin_pred,
+      state_winner = case_when(
+        dem_votes_actuals > gop_votes_actuals ~ "DEM",
+        TRUE ~ "GOP"
+      )
+    )
+  
+  return(base_df)
+  
+}
+
+arizona_df <- create_base_df('Arizona')
+
+
+create_party_county_df <- function(party, data){
+  if (party == "DEM"){
+    state_dem <- data |>
+      select(county_name, dem_votes_actuals, dem_votes_preds, dem_diff, dem_perc_diff, state_winner) |>
+      mutate(abs_perc_diff = abs(dem_perc_diff)) |>
+      rename(
+        County = county_name,
+        Actuals = dem_votes_actuals,
+        Predictions = dem_votes_preds,
+        Difference = dem_diff,
+        `% Difference` = dem_perc_diff,
+        `Abs % Difference` = abs_perc_diff,
+        `State Winner` = state_winner
+      )
+  return(state_dem)
+
+  }
+  else if (party == "GOP"){
+    state_gop <- data |>
+      select(county_name, gop_votes_actuals, gop_votes_preds, gop_diff, gop_perc_diff, state_winner) |>
+      mutate(abs_perc_diff = abs(gop_perc_diff)) |>
+      rename(
+        County = county_name,
+        Actuals = gop_votes_actuals,
+        Predictions = gop_votes_preds,
+        Difference = gop_diff,
+        `% Difference` = gop_perc_diff,
+        `Abs % Difference` = abs_perc_diff,
+        `State Winner` = state_winner
+      )
+    return(state_gop)
+
+  }
+  else{
+    stop("You must select either 'DEM' or 'GOP' for the first argument.") 
+  }
+}
+ 
+arizona_dem <- create_party_county_df('DEM', arizona_df)
+arizona_gop <- create_party_county_df('GOP', arizona_df)
 
 ```
 
-```{r}
+All counties in Arizona underperformed their Democratic vote predictions. The worst miss was Maricopa County with a difference of -231K (-19.11%) from actuals to predictions.
+
+```{r arizona_table_dem, echo=FALSE}
+datatable(arizona_dem |> select(-c(`State Winner`)), 
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; font-size: 20px; font-weight: bold;', 
+            ' Arizona DEM 2024 Performance by County'
+          ),
+          options = list(
+            dom = 'tp', 
+            order = list(list(6, "asc")),
+            scrollX = TRUE, 
+            columnDefs = list(list(targets = "_all", visible = TRUE)),
+            pageLength = 10  
+          )
+        )|>
+
+ formatStyle(
+    columns = 1:ncol(arizona_dem),
+    background = styleInterval(1, c("white", "white")),
+    fontWeight = styleInterval(1, c("normal", "normal")),
+    color = styleInterval(1, c("black", "black"))
+  ) |>
+  formatCurrency(
+    columns = 2:4,
+    currency = "",
+    digits = 0
+  ) |>
+   formatPercentage(
+    columns = c(5,6),
+    digits = 2
+  ) |>
+  formatStyle(
+    columns = c("Difference", "% Difference"),  
+    color = styleInterval(0, c("red", "green"))  
+  )
+
 
 ```
 
-```{r}
+The Republican vote overperformed 8 county predictions, while underperforming 7 county predictions. The biggest miss was also Maricopa county, but only by -63K (-5.69%).
+
+```{r arizona_gop_table, echo = FALSE}
+datatable(arizona_gop |> select(-c(`State Winner`)), 
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; font-size: 20px; font-weight: bold;', 
+            ' Arizona GOP 2024 Performance by County'
+          ),
+          options = list(
+            dom = 'tp', 
+            order = list(list(6, "asc")),
+            scrollX = TRUE, 
+            columnDefs = list(list(targets = "_all", visible = TRUE)),
+            pageLength = 10  
+          )
+        )|>
+
+ formatStyle(
+    columns = 1:ncol(arizona_gop),
+    background = styleInterval(1, c("white", "white")),
+    fontWeight = styleInterval(1, c("normal", "normal")),
+    color = styleInterval(1, c("black", "black"))
+  ) |>
+  formatCurrency(
+    columns = 2:4,
+    currency = "",
+    digits = 0
+  ) |>
+   formatPercentage(
+    columns = c(5,6),
+    digits = 2
+  ) |>
+  formatStyle(
+    columns = c("Difference", "% Difference"),  
+    color = styleInterval(0, c("red", "green"))  
+  )
 
 ```
 
-```{r}
+Maricopa County was the only county predicted to have a majority of Democratic votes, but resulted in a Republican victory with actual turnout. This county was one of the consequential misses of the entire forecast with a swing of nearly 168K votes from predictions to actuals.
+
+```{r arizona_scatterplot, echo = FALSE, message = FALSE, warning = FALSE}
+
+plotly::ggplotly(
+  ggplot(
+    arizona_df, aes(x = margin_pred, y = margin_actual, color = state_winner)) +
+    geom_point(aes(text = paste("County:", county_name, 
+                                "<br>Actual Margin:", scales::comma(margin_actual), 
+                                "<br>Predicted Margin:", scales::comma(margin_pred)))) +
+  geom_vline(xintercept = 0, linetype = "dashed") + 
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    scale_color_manual(values = c("DEM" = "blue", "GOP" = "red")) +
+    ggtitle('2024 Actuals vs. Predicted Vote Margin')  +
+    scale_x_continuous(labels = label_number(scale = 1e-3, suffix = "K")) +
+    scale_y_continuous(labels = label_number(scale = 1e-3, suffix = "K")) +
+    xlab('Predicted Margin') + ylab('Actual Margin') +
+    labs(color = "State Winner") 
+
+, tooltip = 'text') |>
+  plotly::layout(
+    title = list(text = "2024 Arizona Actuals vs. Predicted Vote Margin by County",  x = 0.5, xanchor = "center"),
+    legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.2))
+
+
 
 ```
 
-```{r}
+```{r michigan_counties, include = FALSE}
+
+michigan_df <- create_base_df('Michigan')
+michigan_dem <- create_party_county_df('DEM', michigan_df)
+michigan_gop <- create_party_county_df('GOP', michigan_df)
+```
+
+The biggest county-level prediction miss for Democrats was in Washtenaw County with a difference of -15K (-8.75%). Their biggest vote gain was in Wayne County with a difference of 6K votes (1.15%) between actuals and predictions.
+
+```{r michigan_table_dem, echo=FALSE}
+datatable(michigan_dem |> select(-c(`State Winner`)), 
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; font-size: 20px; font-weight: bold;', 
+            ' Michigan DEM 2024 Performance by County'
+          ),
+          options = list(
+            dom = 'tp', 
+            order = list(list(6, "asc")),
+            scrollX = TRUE, 
+            columnDefs = list(list(targets = "_all", visible = TRUE)),
+            pageLength = 10 
+          )
+        )|>
+
+ formatStyle(
+    columns = 1:ncol(michigan_dem),
+    background = styleInterval(1, c("white", "white")),
+    fontWeight = styleInterval(1, c("normal", "normal")),
+    color = styleInterval(1, c("black", "black"))
+  ) |>
+  formatCurrency(
+    columns = 2:4,
+    currency = "",
+    digits = 0
+  ) |>
+   formatPercentage(
+    columns = c(5,6),
+    digits = 2
+  ) |>
+  formatStyle(
+    columns = c("Difference", "% Difference"),  
+    color = styleInterval(0, c("red", "green"))  
+  )
+
+
 
 ```
 
-```{r}
+Republicans overperformed in most counties, but especially Wayne County by 90K votes (45.48%).
+
+```{r michigan_gop_table, echo = FALSE}
+datatable(michigan_gop |> select(-c(`State Winner`)), 
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; font-size: 20px; font-weight: bold;', 
+            ' Michigan GOP 2024 Performance by County'
+          ),
+          options = list(
+            dom = 'tp', 
+            order = list(list(6, "asc")),
+            scrollX = TRUE, 
+            columnDefs = list(list(targets = "_all", visible = TRUE)),
+            pageLength = 10
+          )
+        )|>
+
+ formatStyle(
+    columns = 1:ncol(michigan_gop),
+    background = styleInterval(1, c("white", "white")),
+    fontWeight = styleInterval(1, c("normal", "normal")),
+    color = styleInterval(1, c("black", "black"))
+  ) |>
+  formatCurrency(
+    columns = 2:4,
+    currency = "",
+    digits = 0
+  ) |>
+   formatPercentage(
+    columns = c(5,6),
+    digits = 2
+  ) |>
+  formatStyle(
+    columns = c("Difference", "% Difference"),  
+    color = styleInterval(0, c("red", "green"))  
+  )
+
 
 ```
 
-```{r}
+Eaton County, Muskegon County, Grand Traverse County, and Saginaw County were all predicted to have a majority of Democratic votes, but actual turnout resulted in Republican victories. Saginaw County proved to be the most consequential miss with a swing of nearly 14K votes from predictions to actuals.
+
+```{r michigan_scatterplot, echo = FALSE, message = FALSE, warning = FALSE}
+
+plotly::ggplotly(
+  ggplot(
+    michigan_df, aes(x = margin_pred, y = margin_actual, color = state_winner)) +
+    geom_point(aes(text = paste("County:", county_name, 
+                                "<br>Actual Margin:", scales::comma(margin_actual), 
+                                "<br>Predicted Margin:", scales::comma(margin_pred)))) +
+  geom_vline(xintercept = 0, linetype = "dashed") + 
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    scale_color_manual(values = c("DEM" = "blue", "GOP" = "red")) +
+    scale_x_continuous(labels = label_number(scale = 1e-3, suffix = "K")) +
+    scale_y_continuous(labels = label_number(scale = 1e-3, suffix = "K")) +
+    xlab('Predicted Margin') + ylab('Actual Margin') +
+    labs(color = "State Winner") 
+
+, tooltip = 'text') |>
+  plotly::layout(
+    title = list(text = "2024 Michigan Actuals vs. Predicted Vote Margin by County",  x = 0.5, xanchor = "center"),
+    legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.2))
+```
+
+```{r nevada_counties, include = FALSE}
+
+nevada_df <- create_base_df('Nevada')
+nevada_dem <- create_party_county_df('DEM', nevada_df)
+nevada_gop <- create_party_county_df('GOP', nevada_df)
 
 ```
 
-```{r}
+Clark County was the biggest Democratic miss with a difference between actuals and predictions of -131K (-20.16%).
+
+```{r nevada_dem_table, echo = FALSE}
+
+datatable(nevada_dem |> select(-c(`State Winner`)), 
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; font-size: 20px; font-weight: bold;', 
+            ' Nevada DEM 2024 Performance by County'
+          ),
+          options = list(
+            dom = 'tp', 
+            order = list(list(6, "asc")),
+            scrollX = TRUE, 
+            columnDefs = list(list(targets = "_all", visible = TRUE)),
+            pageLength = 10  
+          )
+        )|>
+
+ formatStyle(
+    columns = 1:ncol(nevada_dem),
+    background = styleInterval(1, c("white", "white")),
+    fontWeight = styleInterval(1, c("normal", "normal")),
+    color = styleInterval(1, c("black", "black"))
+  ) |>
+  formatCurrency(
+    columns = 2:4,
+    currency = "",
+    digits = 0
+  ) |>
+   formatPercentage(
+    columns = c(5,6),
+    digits = 2
+  ) |>
+  formatStyle(
+    columns = c("Difference", "% Difference"),  
+    color = styleInterval(0, c("red", "green"))  
+  )
 
 ```
 
-```{r}
+Clark County was the biggest Republican miss as well with a difference between actuals and predictions of -44K (-8.20%).
+
+```{r nevada_gop_table, echo = FALSE}
+
+
+datatable(nevada_gop |> select(-c(`State Winner`)), 
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; font-size: 20px; font-weight: bold;', 
+            ' Nevada GOP 2024 Performance by County'
+          ),
+          options = list(
+            dom = 'tp', 
+            order = list(list(6, "asc")),
+            scrollX = TRUE, 
+            columnDefs = list(list(targets = "_all", visible = TRUE)),
+            pageLength = 10 
+          )
+        )|>
+
+ formatStyle(
+    columns = 1:ncol(nevada_gop),
+    background = styleInterval(1, c("white", "white")),
+    fontWeight = styleInterval(1, c("normal", "normal")),
+    color = styleInterval(1, c("black", "black"))
+  ) |>
+  formatCurrency(
+    columns = 2:4,
+    currency = "",
+    digits = 0
+  ) |>
+   formatPercentage(
+    columns = c(5,6),
+    digits = 2
+  ) |>
+  formatStyle(
+    columns = c("Difference", "% Difference"),  
+    color = styleInterval(0, c("red", "green"))  
+  )
+```
+
+The statewide call for Nevada predicted a Democratic victory, but actual turnout resulted in a Republican victory in the state. There were no unexpected counties that flipped parties from predictions to actuals.
+
+```{r nevada_scatterplot, echo = FALSE, message = FALSE, warning = FALSE}
+
+plotly::ggplotly(
+  ggplot(
+    nevada_df, aes(x = margin_pred, y = margin_actual, color = state_winner)) +
+    geom_point(aes(text = paste("County:", county_name, 
+                                "<br>Actual Margin:", scales::comma(margin_actual), 
+                                "<br>Predicted Margin:", scales::comma(margin_pred)))) +
+  geom_vline(xintercept = 0, linetype = "dashed") + 
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    scale_color_manual(values = c("DEM" = "blue", "GOP" = "red")) +
+    scale_x_continuous(labels = label_number(scale = 1e-3, suffix = "K")) +
+    scale_y_continuous(labels = label_number(scale = 1e-3, suffix = "K")) +
+    xlab('Predicted Margin') + ylab('Actual Margin') +
+    labs(color = "State Winner") 
+
+, tooltip = 'text') |>
+  plotly::layout(
+    title = list(text = "2024 Nevada Actuals vs. Predicted Vote Margin by County",  x = 0.5, xanchor = "center"),
+    legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.2))
 
 ```
 
-```{r}
+```{r penn_counties, include = FALSE}
+
+penn_df <- create_base_df('Pennsylvania')
+penn_dem <- create_party_county_df('DEM', penn_df)
+penn_gop <- create_party_county_df('GOP', penn_df)
 
 ```
 
-```{r}
+While the statewide call for Pennsylvania resulted in a victory for Republicans, the largest vote gain from actuals to predictions for Democrats came from Allegheny County with a 48K difference (12.46%) followed by Philadelphia County with a difference of 37K (6.89%).
+
+```{r penn_dem_table, echo = FALSE}
+datatable(penn_dem |> select(-c(`State Winner`)), 
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; font-size: 20px; font-weight: bold;', 
+            ' Pennsylvania DEM 2024 Performance by County'
+          ),
+          options = list(
+            dom = 'tp', 
+            order = list(list(6, "asc")),
+            scrollX = TRUE, 
+            columnDefs = list(list(targets = "_all", visible = TRUE)),
+            pageLength = 10  
+          )
+        )|>
+
+ formatStyle(
+    columns = 1:ncol(penn_dem),
+    background = styleInterval(1, c("white", "white")),
+    fontWeight = styleInterval(1, c("normal", "normal")),
+    color = styleInterval(1, c("black", "black"))
+  ) |>
+  formatCurrency(
+    columns = 2:4,
+    currency = "",
+    digits = 0
+  ) |>
+   formatPercentage(
+    columns = c(5,6),
+    digits = 2
+  ) |>
+  formatStyle(
+    columns = c("Difference", "% Difference"),  
+    color = styleInterval(0, c("red", "green"))  
+  )
 
 ```
 
-```{r}
+Republicans were able to win Pennsylvania statewide in large part due to their overperforming in both Philadelphia County with 63K more votes than expected (76.96%) followed by Allegheny County with 48K more votes than expected (20.39%).
+
+```{r penn_gop_table, echo = FALSE}
+datatable(penn_gop |> select(-c(`State Winner`)), 
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; font-size: 20px; font-weight: bold;', 
+            ' Pennsylvania GOP 2024 Performance by County'
+          ),
+          options = list(
+            dom = 'tp', 
+            order = list(list(6, "asc")),
+            scrollX = TRUE, 
+            columnDefs = list(list(targets = "_all", visible = TRUE)),
+            pageLength = 10  
+          )
+        )|>
+
+ formatStyle(
+    columns = 1:ncol(penn_gop),
+    background = styleInterval(1, c("white", "white")),
+    fontWeight = styleInterval(1, c("normal", "normal")),
+    color = styleInterval(1, c("black", "black"))
+  ) |>
+  formatCurrency(
+    columns = 2:4,
+    currency = "",
+    digits = 0
+  ) |>
+   formatPercentage(
+    columns = c(5,6),
+    digits = 2
+  ) |>
+  formatStyle(
+    columns = c("Difference", "% Difference"),  
+    color = styleInterval(0, c("red", "green"))  
+  )
+```
+
+Both Erie County and Monroe County were predicted to have a majority Democratic vote, but actual turnout resulted in a Republican victories.
+
+```{r penn_scatterplot, echo = FALSE, message = FALSE, warning = FALSE}
+
+plotly::ggplotly(
+  ggplot(
+    penn_df, aes(x = margin_pred, y = margin_actual, color = state_winner)) +
+    geom_point(aes(text = paste("County:", county_name, 
+                                "<br>Actual Margin:", scales::comma(margin_actual), 
+                                "<br>Predicted Margin:", scales::comma(margin_pred)))) +
+  geom_vline(xintercept = 0, linetype = "dashed") + 
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    scale_color_manual(values = c("DEM" = "blue", "GOP" = "red")) +
+    scale_x_continuous(labels = label_number(scale = 1e-3, suffix = "K")) +
+    scale_y_continuous(labels = label_number(scale = 1e-3, suffix = "K")) +
+    xlab('Predicted Margin') + ylab('Actual Margin') +
+    labs(color = "State Winner") 
+
+, tooltip = 'text') |>
+  plotly::layout(
+    title = list(text = "2024 Pennsylvania Actuals vs. Predicted Vote Margin by County",  x = 0.5, xanchor = "center"),
+    legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.2))
 
 ```
 
-```{r}
+```{r wisconsin_counties, include = FALSE}
+
+wisconsin_df <- create_base_df('Wisconsin')
+wisconsin_dem <- create_party_county_df('DEM', wisconsin_df)
+wisconsin_gop <- create_party_county_df('GOP', wisconsin_df)
+
+```
+
+Democratics underperformed the prediction in Dane County by -20K (-6.83%).
+
+```{r wisconsin_dem_table, echo = FALSE}
+
+datatable(wisconsin_dem |> select(-c(`State Winner`)), 
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; font-size: 20px; font-weight: bold;', 
+            ' Wisconsin DEM 2024 Performance by County'
+          ),
+          options = list(
+            dom = 'tp', 
+            order = list(list(6, "asc")),
+            scrollX = TRUE, 
+            columnDefs = list(list(targets = "_all", visible = TRUE)),
+            pageLength = 10
+          )
+        )|>
+
+ formatStyle(
+    columns = 1:ncol(wisconsin_dem),
+    background = styleInterval(1, c("white", "white")),
+    fontWeight = styleInterval(1, c("normal", "normal")),
+    color = styleInterval(1, c("black", "black"))
+  ) |>
+  formatCurrency(
+    columns = 2:4,
+    currency = "",
+    digits = 0
+  ) |>
+   formatPercentage(
+    columns = c(5,6),
+    digits = 2
+  ) |>
+  formatStyle(
+    columns = c("Difference", "% Difference"),  
+    color = styleInterval(0, c("red", "green"))  
+  )
+
+
+```
+
+While Republicans underperformed their predictions in Washington County by -7K (-10.55%), most of the other counties in which they also underperformed were only by small margins under -5%. Their largest vote gain from actuals to predictions came from Rock County with a difference of 5K (15.16%).
+
+```{r wisconsin_gop_table, echo = FALSE}
+datatable(wisconsin_gop |> select(-c(`State Winner`)), 
+          caption = htmltools::tags$caption(
+            style = 'caption-side: top; font-size: 20px; font-weight: bold;', 
+            ' Wisconsin GOP 2024 Performance by County'
+          ),
+          options = list(
+            dom = 'tp', 
+            order = list(list(6, "asc")),
+            scrollX = TRUE, 
+            columnDefs = list(list(targets = "_all", visible = TRUE)),
+            pageLength = 10  
+          )
+        )|>
+
+ formatStyle(
+    columns = 1:ncol(wisconsin_gop),
+    background = styleInterval(1, c("white", "white")),
+    fontWeight = styleInterval(1, c("normal", "normal")),
+    color = styleInterval(1, c("black", "black"))
+  ) |>
+  formatCurrency(
+    columns = 2:4,
+    currency = "",
+    digits = 0
+  ) |>
+   formatPercentage(
+    columns = c(5,6),
+    digits = 2
+  ) |>
+  formatStyle(
+    columns = c("Difference", "% Difference"),  
+    color = styleInterval(0, c("red", "green"))  
+  )
+
+```
+
+Each party picked up 1 unexpected county: Portage County was predicted to have a majority Republican vote, but actual turnout resulted in a Democratic victory. Conversely, Sauk County was predicted to have a majority Democratic vote, but actual turnout resulted in a Republican victory. Neither county was consequential in the outcome of the statewide vote.
+
+```{r wisconsin_scatterplot, echo = FALSE, message = FALSE, warning = FALSE}
+
+plotly::ggplotly(
+  ggplot(
+    wisconsin_df, aes(x = margin_pred, y = margin_actual, color = state_winner)) +
+    geom_point(aes(text = paste("County:", county_name, 
+                                "<br>Actual Margin:", scales::comma(margin_actual), 
+                                "<br>Predicted Margin:", scales::comma(margin_pred)))) +
+  geom_vline(xintercept = 0, linetype = "dashed") + 
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    scale_color_manual(values = c("DEM" = "blue", "GOP" = "red")) +
+    ggtitle('2024 Actuals vs. Predicted Vote Margin')  +
+    scale_x_continuous(labels = label_number(scale = 1e-3, suffix = "K")) +
+    scale_y_continuous(labels = label_number(scale = 1e-3, suffix = "K")) +
+    xlab('Predicted Margin') + ylab('Actual Margin') +
+    labs(color = "State Winner") 
+
+, tooltip = 'text') |>
+  plotly::layout(
+    title = list(text = "2024 Wisconsin Actuals vs. Predicted Vote Margin by County",  x = 0.5, xanchor = "center"),
+    legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.2))
 
 ```
