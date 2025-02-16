@@ -26,7 +26,13 @@ library(scales)
 
 #-----Load data
 url <- "https://raw.githubusercontent.com/statzenthusiast921/US_Elections_Project/refs/heads/main/Data/compare2024.csv"
-df <- read_csv(url, show_col_types = FALSE)
+df <- read_csv(url, show_col_types = FALSE) |>
+  mutate(
+    fips_code_lz = case_when(
+      length(fips_code_lz) == 4 ~ as.character(paste0('0', as.character(fips_code_lz))),
+      TRUE ~ as.character(fips_code_lz)
+    )
+  )
 ```
 
 ```{r fix_a_few_state_numbers, include = FALSE, echo = FALSE}
@@ -55,49 +61,323 @@ DC <- data.frame(
 
 
 
-df <- df |> rbind(CT, DC)
 
-```
+#----- 1/15 : Alabama
 
-```{r add_in_missing_virgina_counties, echo=FALSE, include = FALSE}
 
-va_actuals_2024 <- read_csv('/Users/jonzimmerman/Desktop/Data Projects/Elections Project/Data/2024_US_County_Level_Presidential_Results.csv',show_col_types = FALSE) |>
-  filter(state_name == "Virginia") |>
+AL_extra <- data.frame(
+  state_name = 'Alabama',
+  county_name = 'St. Clair County',
+  fips_code_lz = '01115',
+  dem_votes_actuals = 7640,
+  dem_votes_preds = 8639.206303,
+  gop_votes_actuals = 35501,
+  gop_votes_preds = 45378.49691
+)
+
+
+#----- 2/15 : Arkansas
+AR_extra <- data.frame(
+  state_name = 'Arkansas',
+  county_name = 'St. Francis County',
+  fips_code_lz = '05123',
+  dem_votes_actuals = 2953,
+  dem_votes_preds = 4643.70718,
+  gop_votes_actuals = 2909,
+  gop_votes_preds = 3734.56694
+)
+
+#----- 3/15: Florida
+FL_extra <- data.frame(
+  state_name = rep('Florida', 2), 
+  county_name = c('St. Johns County','St. Lucie County'),
+  fips_code_lz = c('12109','12111'),
+  dem_votes_actuals = c(66862,83517),
+  dem_votes_preds = c(75160.80636,101087.6594),
+  gop_votes_actuals = c(128759,100293),
+  gop_votes_preds = c(139209.3109,99535.21287)
+)
+
+#----- 4/15: Illinois
+
+IL_extra <- data.frame(
+  state_name = 'Illinois',
+  county_name = 'St. Clair County',
+  fips_code_lz = '17163',
+  dem_votes_actuals = 63433,
+  dem_votes_preds = 63814.72433,
+  gop_votes_actuals = 54021,
+  gop_votes_preds = 53689.53059
+)
+
+
+#----- 5/15 : Indiana
+
+IN_extra <- data.frame(
+  state_name = 'Indiana',
+  county_name = 'St. Joseph County',
+  fips_code_lz = '18141',
+  dem_votes_actuals = 55215,
+  dem_votes_preds = 56788.44996,
+  gop_votes_actuals = 53585,
+  gop_votes_preds = 49362.51955
+)
+
+
+#----- 6/15 : Louisana
+LA_extra <- data.frame(
+  state_name = rep('Louisiana',9),
+  county_name = c('St. Bernard County','St. Charles County','St. Helena County','St. James County','St. John the Baptist County','St. Landry County','St. Martin County','St. Mary County','St. Tammany County'),
+  fips_code_lz = c('22087', '22089', '22091',
+                   '22093', '22095', '22097',
+                   '22099', '22101', '22103'),
+  dem_votes_actuals = c(5967,8812,2848,5792,12043,14833,7284,7011,37777),
+  dem_votes_preds = c(8618.739,11289.98286
+,3906.330368,7261.802411,16162.17334,21338.55504
+,10864.07438,9980.476712,49613.08223),
+  gop_votes_actuals = c(11033,17443,2804,5902,6557,21812,17466,13671,98377),
+  gop_votes_preds = c(14465.86816,22710.8027,3529.955385,7514.118394,9775.96829,
+22918.86541,20454.26882,15696.39672,127539.8166)
+)
+
+
+#---- 7/15 : Maryland
+MD_extra <- data.frame(
+  state_name = rep('Maryland',2),
+  county_name = c("St. Mary's County",'Baltimore City'),
+  fips_code_lz = c('24037','24510'),
+  dem_votes_actuals = c(23531,195019),
+  dem_votes_preds = c(27239.16014,186955.2961),
+  gop_votes_actuals = c(33582,27984),
+  gop_votes_preds = c(35539.75235,18209.2131)
+)
+
+
+#----- 8/15 :Michigan
+MI_extra<- data.frame(
+  state_name = rep('Michigan',2),
+  county_name = c('St. Clair County', 'St. Joseph County'),
+  fips_code_lz = c('26147','26149'),
+  dem_votes_actuals = c(30844, 9452),
+  dem_votes_preds = c(29331.6804,9138.110437),
+  gop_votes_actuals = c(64277, 19403),
+  gop_votes_preds = c(60810.76941,18365.26587)
+)
+
+
+#----- 9/15 : Minnesota
+MN_extra <- data.frame(
+  state_name = 'Minnesota',
+  county_name = 'St. Louis County',
+  fips_code_lz = '27137',
+  dem_votes_actuals = 66335,
+  dem_votes_preds = 63678.66115,
+  gop_votes_actuals = 50065,
+  gop_votes_preds = 45597.56393
+)
+
+#----- 10/15 : Missouri
+MO_extra<- data.frame(
+  state_name = rep('Missouri',5),
+  county_name = c('St. Charles County','St. Clair County','St. Francois County','St. Louis County','St. Louis City'),
+  fips_code_lz = c('29183','29185','29187','29189','29510'),
+  dem_votes_actuals = c(92226,959,6811,305635,94458),
+  dem_votes_preds = c(124684.9447,1022.221202,7033.438233,340591.4234,97433.91076),
+  gop_votes_actuals = c(130588, 3982, 21521,187982,19342),
+  gop_votes_preds = c(161182.554,3958.179186,20437.18336,245720.7415, 14425.04512)
+)
+
+
+#----- 11/15 : New Mexico
+NM_extra <- data.frame(
+  state_name = 'New Mexico',
+  county_name = 'Dona Ana',
+  fips_code_lz = '35013',
+  dem_votes_actuals = 45937,
+  dem_votes_preds = 53107.34737,
+  gop_votes_actuals = 37594,
+  gop_votes_preds = 36483.5287
+)
+
+
+#----- 12/15 : New York
+NY_extra <- data.frame(
+  state_name = 'New York',
+  county_name = 'St. Lawrence County',
+  fips_code_lz = '36089',
+  dem_votes_actuals = 18010,
+  dem_votes_preds = 16284.97439,
+  gop_votes_actuals = 25919,
+  gop_votes_preds = 22961.68393
+)
+
+#----- 13/15 : Oregon
+OR <- df |> filter(state_name == "Oregon")
+OR_extra <- data.frame(
+  state_name = rep('Oregon',36),
+  county_name = OR$county_name,
+  fips_code_lz = OR$fips_code_lz,
+  dem_votes_actuals = c(2343,33909,130580,12533,12895,13731,3836,
+                        5737,68108,18386,291,816,797,8364,54065,
+                        3941,16928,9856,681,125775,17112,25749,
+                        2884,73970,1138,325927,22034,233,7747,9251,
+                        4107,1573,6069,193013,210,26011),
+  dem_votes_preds = c(2214.976993,39089.70426,148193.95,11415.22757,
+                      13168.07474,13447.06186,3605.145289,6096.691129,
+                      76267.44443,18881.36374,278.0755228,792.1184672,
+                      733.6294546,9068.86091,60609.37625,4237.389219,
+                      19520.13056,8748.578329,703.0822354,138629.9974,
+                      17551.65401,24605.29266,2749.204462,83573.66953,
+                      1400.323494,378330.8357,23431.42235,234.8819434,
+                      7388.286243,9431.19506,4093.85686,1469.604347,
+                      5626.386225,227186.5202,178.4670141,28048.82926),
+  gop_votes_actuals = c(7060,14187,106387,9913,17227,20849,12012,8000,
+                        54850,41561,805,3490,3307,3854,61743,7454,31129,
+                        24675,3421,77376,11645,43078,7710,77089,3408,
+                        70759,23768,890,7971,20973,9942,3366,6837,92590,
+                        618,29536),
+  gop_votes_preds = c(7501.829911,15805.4855,126840.4284,8533.955188,
+                      16763.01113,19484.17759,12462.8665,9151.241419,
+                      64945.96317,45669.24439,780.0184078,3484.577925,
+                      3434.774739,3967.096067,65683.65848,7571.559481,
+                      35226.84311,25040.26808,3519.393366,77941.77483,
+                      11964.84062,43581.85267,7752.288646,75111.68495,
+                      3768.872099,65413.21963,22919.7495,898.3407992,
+                      8259.690314,21045.23251,10499.03135,3294.686113,
+                      6419.57654,103133.2844,669.6958205,29025.40086)
+)
+
+
+#----- 14/15 : Wisconsin
+WI_extra <- data.frame(
+  state_name = 'Wisconsin',
+  county_name = 'St. Croix County',
+  fips_code_lz = '55109',
+  dem_votes_actuals = 23870,
+  dem_votes_preds = 24056.83562,
+  gop_votes_actuals = 35537,
+  gop_votes_preds = 33635.54492
+)
+
+
+#----- 15/15: Virginia
+va_actuals <- readxl::read_excel('/Users/jonzimmerman/Desktop/va_totals2024.xlsx') |>
   mutate(
     county_name = case_when(
-      grepl('city', county_name, ignore.case = TRUE) ~ str_to_title(county_name),
+      grepl('city',county_name, ignore.case=TRUE) ~ county_name,
+      TRUE ~ paste0(county_name, ' County')
+    ),
+    county_name = case_when(
+      county_name == "Winchester County" ~ "Winchester City",
+      county_name == "Williamsburg County" ~ "Williamsburg City",
+      county_name == "Waynesboro County" ~ "Waynesboro City",
+      county_name == "Virginia Beach County" ~ "Virginia Beach City",
+      county_name == "Suffolk County" ~ "Suffolk City",
+      county_name == "Staunton County" ~ "Staunton City",
+      county_name == "Salem County" ~ "Salem City",
+      county_name == "Radford County" ~ "Radford City",
+      county_name == "Portsmouth County" ~ "Portsmouth City",
+      county_name == "Poquoson County" ~ "Poquoson City",
+      county_name == "Petersburg County" ~ "Petersburg City",
+      county_name == "Norton County" ~ "Norton City",
+      county_name == "Norfolk County" ~ "Norfolk City",
+      county_name == "Newport News County" ~ "Newport News City",
+      county_name == "Martinsville County" ~ "Martinsville City",
+      county_name == "Manassas Park County" ~ "Manassas Park City",
+      county_name == "Manassas County" ~ "Manassas City",
+      county_name == "Lynchburg County" ~ "Lynchburg City",
+      county_name == "Lexington County" ~ "Lexington City",
+      county_name == "Hopewell County" ~ "Hopewell City",
+      county_name == "Harrisonburg County" ~ "Harrisonburg City",
+      county_name == "Hampton County" ~ "Hampton City",
+      county_name == "Galax County" ~ "Galax City",
+      county_name == "Fredericksburg County" ~ "Fredericksburg City",
+      county_name == "Franklin County" ~ "Franklin City",
+      county_name == "Falls Church County" ~ "Falls Church City",
+      county_name == "Fairfax County" ~ "Fairfax City",
+      county_name == "Emporia County" ~ "Emporia City",
+      county_name == "Danville County" ~ "Danville City",
+      county_name == "Covington County" ~ "Covington City",
+      county_name == "Colonial Heights County" ~ "Colonial Heights City",
+      county_name == "Chesapeake County" ~ "Chesapeake City",
+      county_name == "Charlottesville County" ~ "Charlottesville City",
+      county_name == "Buena Vista County" ~ "Buena Vista City",
+      county_name == "Bristol County" ~ "Bristol City",
+      county_name == "Bedford County" ~ "Bedford City",
+      county_name == "Alexandria County" ~ "Alexandria City",
       TRUE ~ county_name
     )
   )
 
-va_preds_2024 <-read_csv('/Users/jonzimmerman/Desktop/preds_2024_df.csv',show_col_types = FALSE) |>
-  filter(state_name == "Virginia" & county_name != "Bedford City")
-  
-#----Check if dataframes are aligned by county
-
-check_actuals <- va_actuals_2024 |> select(county_name) |> rename(col1 = county_name)
-check_preds <- va_preds_2024 |> select(county_name) |> rename(col2 = county_name)
-check <- cbind(check_actuals, check_preds) |>
+va_preds <- read_csv('/Users/jonzimmerman/Desktop/preds_2024_df.csv') |> 
+  filter(state_name == "Virginia") |>
+  select(state_name, county_name, gop_votes_preds = gop_votes, dem_votes_preds = dem_votes) |>
   mutate(
-    match = (col1 == col2)
+    county_name = case_when(
+      county_name == "Charles City County" ~ "Charles City",
+      county_name == "James City County" ~ "James City",
+
+      TRUE ~county_name
+    )
   )
+
+VA_extra <- left_join(
+  va_preds,
+  va_actuals,
+  by = c('county_name')
+) |>
+  mutate(fips_code_lz = '99999') |>
+  relocate(fips_code_lz, .after = county_name) |>
+  relocate(dem_votes_actual, .after= fips_code_lz) |>
+  relocate(dem_votes_preds, .after = dem_votes_actual) |>
+  relocate(gop_votes_actual, .after = dem_votes_preds) |>
+  rename(
+    dem_votes_actuals = dem_votes_actual,
+    gop_votes_actuals = gop_votes_actual
+  )
+
+
+VA_extra2 <- VA_extra |>
+  filter(!county_name %in% c("Bedford County")) |>
+  mutate(
+    dem_votes_actuals = case_when(
+      county_name == "Fairfax County" ~ 386438,
+      county_name == "Franklin County" ~ 8321,
+      TRUE ~ dem_votes_actuals
+    ),
+    gop_votes_actuals = case_when(
+      county_name == "Fairfax County" ~ 181895,
+      county_name == "Franklin County" ~ 22319,
+
+      TRUE ~ gop_votes_actuals
+    ),
+  ) |>
+  filter(!(county_name == "Fairfax City" & dem_votes_actuals > 10000)) |>
+  filter(!(county_name == "Franklin City" & dem_votes_actuals > 8000))
   
-VA <- data.frame(
-  state_name = rep('Virginia', 133),
-  county_name = va_preds_2024$county_name,
-  fips_code_lz = va_preds_2024$fips_code,
-  dem_votes_actuals = va_actuals_2024$dem_votes,
-  dem_votes_preds = va_preds_2024$dem_votes,
-  gop_votes_actuals = va_actuals_2024$gop_votes,
-  gop_votes_preds = va_preds_2024$gop_votes
-)
+test <- VA_extra2 |> filter(is.na(gop_votes_actuals))
 
-#Add in Bedford City
+#----- Add in the extra counties
+df <- df |> 
+  filter(!state_name == "Oregon") |>
+  filter(!state_name == "Virginia")
 
 
-df <- df |>
-  filter(!state_name == "Virginia") |>
-  bind_rows(VA)
+df <- df |> rbind(CT, DC, AL_extra, AR_extra, FL_extra, IL_extra, 
+                  IN_extra, LA_extra, MD_extra, MI_extra, MN_extra, 
+                  MO_extra, NM_extra, NY_extra, WI_extra, OR_extra,
+                  VA_extra2)
+
+```
+
+```{r check_totals, include = FALSE}
+
+check_totals <- df |>
+  group_by(state_name) |>
+  summarise(
+    gop = sum(gop_votes_actuals, na.rm=TRUE),
+    dem = sum(dem_votes_actuals, na.rm=TRUE)
+  )
 
 ```
 
@@ -224,7 +504,6 @@ state_df <- df |>
   
 rownames(state_df)
 state_check <- state_df |> select(state_name, dem_votes_actuals, gop_votes_actuals)
-#Missing quite a bit in Florida, illinois, indiana, louisiana, maryland
 ```
 
 ```{r make_tables_by_party, echo=FALSE, include = FALSE}
@@ -1085,6 +1364,34 @@ plotly::ggplotly(
 , tooltip = 'text') |>
   plotly::layout(
     title = list(text = "2024 Wisconsin Actuals vs. Predicted Vote Margin by County",  x = 0.5, xanchor = "center"),
+    legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.2))
+
+```
+
+```{r test, echo=FALSE, include = FALSE}
+
+plotly::ggplotly(
+  ggplot(
+    arizona_df, aes(x = margin_actual, y = margin_pred, color = state_winner)) +
+    geom_point(
+      aes(
+        size = margin_perc_diff,
+        text = paste("County:", county_name, 
+                     "<br>Actual Margin:", scales::comma(margin_actual), 
+                     "<br>Predicted Margin:", scales::comma(margin_pred)),
+      )
+    ) +
+  geom_vline(xintercept = 0, linetype = "dashed") + 
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    scale_color_manual(values = c("DEM" = "blue", "GOP" = "red")) +
+    scale_x_continuous(labels = label_number(scale = 1e-3, suffix = "K")) +
+    scale_y_continuous(labels = label_number(scale = 1e-3, suffix = "K")) +
+    xlab('DEM Votes') + ylab('GOP Votes') +
+    labs(color = "State Winner") 
+
+, tooltip = 'text') |>
+  plotly::layout(
+    title = list(text = "2024 Arizona Actual vs. Predicted Vote Margin by County",  x = 0.5, xanchor = "center"),
     legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.2))
 
 ```
