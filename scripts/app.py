@@ -1,33 +1,31 @@
 import pandas as pd
 import numpy as np
 import dash
-import dash_table
+from dash import dash_table
+from dash import dcc
+from dash import html
 import os
 from urllib.request import urlopen
 import json
-import dash_core_components as dcc
-import dash_html_components as html
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State 
 import plotly.express as px
 import plotly.graph_objects as go
-from flask import Flask, Response
-#from openpyxl import Workbook
-# from sklearn.preprocessing import StandardScaler
-# from sklearn.cluster import KMeans
-# from sklearn import preprocessing
-
 
 
 #Read in datasets
 #1.) Full Elections Data
-elections = pd.read_excel("FullElectionsData.xlsx",engine='openpyxl',dtype={"fips_code_lz": str})
+elections = pd.read_excel("/Users/jonzimmerman/Desktop/Data Projects/Elections Project/Data/FullElectionsData.xlsx",
+                   dtype={"fips_code_lz": str})
 #2 and #3.) Cluster Data
-election2012_filtered = pd.read_excel("THECluster2012.xlsx", engine='openpyxl', dtype={"fips_code_lz": str})
-election2016_filtered = pd.read_excel("THECluster2016.xlsx", engine='openpyxl', dtype={"fips_code_lz": str})
+election2012_filtered = pd.read_excel("/Users/jonzimmerman/Desktop/Data Projects/Elections Project/Data/Cluster Data/THECluster2012.xlsx",dtype={"fips_code_lz": str})
+election2016_filtered = pd.read_excel("/Users/jonzimmerman/Desktop/Data Projects/Elections Project/Data/Cluster Data/THECluster2016.xlsx",dtype={"fips_code_lz": str})
 
 #4.) Predictions Data
-preds = pd.read_excel("ARMA_predictions2024.xlsx", engine='openpyxl', dtype={"fips_code_lz": str})
+# preds = pd.read_excel("/Users/jonzimmerman/Desktop/Data Projects/Elections Project/Data/predictions2024.xlsx",
+#                    dtype={"fips_code_lz": str})
+preds = pd.read_excel("/Users/jonzimmerman/Desktop/Data Projects/Elections Project/Data/ARMA_predictions2024.xlsx",
+                   dtype={"fips_code_lz": str})
 
 preds['perc_margin_formatted'] = preds['perc_margin'].copy()
 preds['perc_margin_formatted'] = preds['perc_margin_formatted'].astype(float).map("{:.1%}".format)
@@ -108,10 +106,16 @@ elections.rename(columns={'state_name': 'State',
 elections['GOP Votes'] = elections['GOP Votes'].apply(lambda x : "{:,}".format(x))
 elections['DEM Votes'] = elections['DEM Votes'].apply(lambda x : "{:,}".format(x))
 elections['Margin'] = elections['Margin'].apply(lambda x : "{:,}".format(x))
+elections['County'] = np.where(
+    elections['County'].str.contains(r'\bSt\.', regex=True), 
+    elections['County'].str.replace(r'\bSt\.', 'Saint', regex=True), 
+    elections['County']
+)
 
-
-#formalize table 1 order
+#formalize table order
 table_show = elections[["State","County","Year","DEM Votes","GOP Votes","Margin","% Margin"]]
+table_show['Year'] = table_show['Year'].astype(str)
+
 
 
 #Assign styles to tabs
@@ -152,10 +156,10 @@ elections2016 = elections[elections['Year']==2016]
 state_to_county = elections.groupby('State')['County'].agg(list).to_dict()
 state_to_county2012 = elections2012.groupby('State')['County'].agg(list).to_dict()
 state_to_county2016 = elections2016.groupby('State')['County'].agg(list).to_dict()
-#placeholder text
+
 app = dash.Dash(__name__,
-                external_stylesheets=[dbc.themes.BOOTSTRAP]#,
-                #assets_folder=os.path.join(os.curdir,"assets")
+                #external_stylesheets=[dbc.themes.SANDSTONE],
+                assets_folder=os.path.join(os.curdir,"assets")
                 )
 server = app.server
 app.layout = html.Div([
@@ -175,7 +179,7 @@ app.layout = html.Div([
                    ],style={'text-decoration': 'underline'}),
                    html.Div([
                        html.P("This dashboard attempts to answer several questions:"),
-                       html.P("1.) How has the United States vote for President changed over time?"),
+                       html.P("1.) How has the United States vote for President has changed over time?"),
                        html.P("2.) What are the characteristics of counties that vote similarly?"),
                        html.P("3.) What will the results of the next election look like?")
 
@@ -186,23 +190,19 @@ app.layout = html.Div([
                    
                    html.Div([
                        html.P(["Data from each US presidential election from 1960 to 2020 was included in this analysis.  Most of the data was gathered from this ", html.A("Github repository",href="https://github.com/cilekagaci/us-presidential-county-1960-2016")," covering elections from 1960 to 2016.  Data for the 2020 election was obtained from this ",html.A(" repository.",href="https://github.com/tonmcg/US_County_Level_Election_Results_08-20")]),
-                       html.P(["County-level socioeconomic data was pulled from this link" ,html.A(" here ",href="https://www.ahrq.gov/sdoh/data-analytics/sdoh-data.html"), "from the Agency for Healthcare Research and Quality."])
-                   ]),
-                   html.Div([
-                        html.P(dcc.Markdown('''**How was the data analyzed?**''')),
-                   ],style={'text-decoration': 'underline'}),
-                   html.Div([
-                        html.P(children=['The National and State Results tabs attempt to answer the 1st question addressed above with descriptive analyses on voting histories.  The Clustering tab attempts to answer the 2nd question by using ', html.A('K-means clustering ',href='https://en.wikipedia.org/wiki/K-means_clustering'), 'to group counties with similar voting patterns and characteristics. The 2024 Predictions tab attempts to answer the 3rd question by using an ',html.A("ARMA(1,1)",href='https://en.wikipedia.org/wiki/Autoregressive%E2%80%93moving-average_model'),' model to predict the winner of next US Presidential election.'])
+                       html.P(["To inform the clustering algorithm, county-level socioeconomic data was pulled from this link" ,html.A(" here ",href="https://www.ahrq.gov/sdoh/data-analytics/sdoh-data.html"), "from the Agency for Healthcare Research and Quality."])
                    ]),
                    html.Div([
                        html.P(dcc.Markdown('''**What are the limitations of this data?**''')),
                    ],style={'text-decoration': 'underline'}),
                    html.Div(
                        children=[
-                       html.P("Data was pulled from multiple sources and combined.  The data sources may have had different standards and/or methods of collecting and maintaining information."),
-                       html.P(["Further, data for Alaska was available, but was not presented with the standard FIPS county code identifier, therefore it was not conducive to regular plotting procedures. Thus, vote estimates from this ", html.A('link',href="https://github.com/tonmcg/US_County_Level_Election_Results_08-20/issues/2"), " were used to take advantage of their consistency with the FIPS county code format.  This was used as the authorative source of data for Alaska, which only had data from 1960 through 2016."])
-                    ]
+                        html.P("Data was pulled from multiple sources and combined.  The data sources may have had different standards and/or methods of collecting and maintaining information."),
+                        html.P(["Further, data for Alaska was available, but was not presented with the standard FIPS county code identifier, therefore it was not conducive for regular plotting procedures. Thus, vote estimates from this ", html.A('link',href="https://github.com/tonmcg/US_County_Level_Election_Results_08-20/issues/2"), " were used to take advantage of their consistency with the FIPS county code format.  This was used as the authorative source of data for Alaska, which only had data from 1960 through 2016."])
+                        ]
                     )
+
+
                ]),
 #Tab #2 --> All Data Tab
         dcc.Tab(label='All Data',value='tab-2',style=tab_style, selected_style=tab_selected_style,
@@ -230,7 +230,7 @@ app.layout = html.Div([
                         dbc.ModalHeader("Instructions"),
                         dbc.ModalBody(
                             children=[
-                                html.P("To the right of this button, you will find the controls for this page.  You can select any election year from 1960 to 2020 to change the map below."),
+                                html.P("To the right of this button, you will find the controls for this page.  You can select any election year from 1960 to 2024 to change the map below."),
                                 html.P("Use the radio button to change between the county map and the vote total map.")
                             ]
                         ),
@@ -259,11 +259,12 @@ app.layout = html.Div([
                                       2008: '2008',
                                       2012: '2012',
                                       2016: '2016',
-                                      2020: '2020'
+                                      2020: '2020',
+                                      2024: '2024'
                                     },
                               value=year_choices.max()
                     )
-                ],style={'width': '50%','display': 'inline-block','text-align': 'center','vertical-align':'top'}),
+                ],style={'width': '50%','display': 'inline-block','textAlign': 'center','vertical-align':'top'}),
                 #Spacing
                 html.Div([
                     html.P('')
@@ -280,10 +281,9 @@ app.layout = html.Div([
                     )
                 ],style={'width': '15%','display': 'inline-block'}),
                 html.Div([
-                    dcc.Loading(
-                        dcc.Graph(id='us_map'),
-                        color='#b0b4fc'
-                    ),
+                    #dcc.Loading(
+                        dcc.Graph(id='us_map')
+                    #)
                 ],style={'width': '100%','display': 'inline-block','text-align': 'left'}),
                 html.Div([
                     dcc.Graph(id='ev_graph')
@@ -331,7 +331,8 @@ app.layout = html.Div([
                                       2008: '2008',
                                       2012: '2012',
                                       2016: '2016',
-                                      2020: '2020'
+                                      2020: '2020',
+                                      2024: '2024'
                                     },
                               value=year_choices.max()
                     ),
@@ -353,10 +354,9 @@ app.layout = html.Div([
                 ]),
                 #State Map with County Choropleth
                 html.Div([
-                    dcc.Loading(
-                        dcc.Graph(id='state_map'),
-                        color='#b0b4fc'
-                    )
+                    #dcc.Loading(
+                        dcc.Graph(id='state_map')
+                    #)
                 ],style={'width': '50%','display': 'inline-block','text-align': 'center'}),
                 #Party Line % Graph
                 html.Div([
@@ -419,22 +419,21 @@ app.layout = html.Div([
                 ],style={'width':'15%','display':'inline-block','vertical-align':'top','text-align': 'left'}),
 
                 html.Div([
-                    dbc.Row(id='metrics_for_clusterNUM'),
-                    dbc.Row(id='card_row')
+                    dbc.Row(id='cluster_county_header'),
+                    dbc.Row(id='cluster_stats_card_row')
                 ],style={'width': '100%','display': 'inline-block','text-align': 'left','vertical-align':'top'}),
 
 
-                #Block 1a of Dynamic Cluster Map
+                #Cluster Map
                 html.Div([
-                    dcc.Loading(
-                        dcc.Graph(id='cluster_map'),
-                        color='#b0b4fc'
-                    )
+                    #dcc.Loading(
+                        dcc.Graph(id='cluster_map')
+                    #)
                 ],style={'width': '100%','display': 'inline-block','text-align': 'left','vertical-align':'top'}),
         
-                #Block 2b of Dynamic Text
+                #Modal Instructions #4
                 html.Div([
-                    dbc.Row(dbc.Button('Click Here for Full Cluster Details',size='lg',block=True,id='open4')),
+                    dbc.Row(dbc.Button('Click Here for Full Cluster Details',size='lg',id='open4')),
                     dbc.Modal(
                         children=[
                             dbc.ModalHeader("Detailed Cluster Statistics"),
@@ -471,7 +470,7 @@ app.layout = html.Div([
                         ),
                     ],id="modal5"),
                 ],style={'width': '25%','display': 'inline-block','vertical-align': 'top'}),
-                #Spacing between elements
+                #Title - need something in the middle for symmetry
                 html.Div([
                     html.P(dcc.Markdown('''**2024 US Presidential Election Predictions**'''))
                 ],style={'width':'50%','display': 'inline-block','fontSize':20,'vertical-align': 'top','text-align': 'center'}),
@@ -492,11 +491,11 @@ app.layout = html.Div([
                     )
                 ],style={'width':'15%','display':'inline-block','vertical-align':'top','text-align': 'left'}),
                 html.Div([
-                    dbc.Row(id="card_row_state"),
-                    dbc.Row(id="card_row_totals"),
-                    dbc.Row(id='card_row_county'),
-                    dbc.Row(id='card_row_percs'),
-                    dbc.Row(id='card_for_winner')
+                    dbc.Row(id="preds_card_row_header"),
+                    dbc.Row(id="preds_card_row_totals")
+                    # dbc.Row(id='card_row_county'),
+                    # dbc.Row(id='card_row_percs'),
+                    # dbc.Row(id='card_for_winner')
                 ],style={'width': '100%','display': 'inline-block'}),
                 #Dropdown and Map
                 html.Div(
@@ -508,10 +507,9 @@ app.layout = html.Div([
                         ),
                 ],style={'width': '100%','display': 'inline-block','text-align': 'left','vertical-align':'top'}),
                 html.Div([
-                    dcc.Loading(
-                        dcc.Graph(id='predictions_map2024'),
-                        color='#b0b4fc'
-                    )
+                    #dcc.Loading(
+                        dcc.Graph(id='predictions_map2024')
+                    #)
                 ],style={'width': '100%','display': 'inline-block','text-align': 'left','vertical-align':'top'})
         
            
@@ -522,7 +520,7 @@ app.layout = html.Div([
 ])
 
 
-#Configure Reactibity for Tab Colors
+#Configure Reactivity for Tab Colors
 
 @app.callback(Output('tabs-content-inline', 'children'),
               Input('tabs-styled-with-inline', 'value'))
@@ -558,10 +556,11 @@ def render_content(tab):
 #Configure Reactivity for Country Map on Tab 3
 @app.callback(
     Output('us_map','figure'),
+    #Output('loading','children'),
     Input('slider1','value'),
     Input('radio1','value'))
 
-def update_figure1(year_select,radio_select):
+def update_vote_map(year_select,radio_select):
         new_df = elections[elections['Year']==year_select]
         if "Vote % Map" in radio_select:
 
@@ -625,11 +624,12 @@ def update_figure1(year_select,radio_select):
     Output('ev_graph','figure'),
     Input('slider1','value'))
 
-def update_figure2(year_select):
+def update_ev_graph(year_select):
         new_df = elections[elections['Year']==year_select]
 
-        Rep = ['Republican']
         Dem = ['Democratic']
+        Rep = ['Republican']
+
 
         fig = go.Figure(data=[
             go.Bar(name='Dem', y=Dem, x=new_df['Dem_EV'],orientation='h'),
@@ -654,7 +654,7 @@ def update_figure2(year_select):
     Input('dropdown1','value'),
     Input('slider2','value'))
 
-def update_figure3(state_select,year_select):
+def update_state_county_map(state_select,year_select):
         new_df = elections[elections['State']==state_select]
         new_df2 = new_df[new_df['Year']==year_select]
         new_df2['perc_margin'] = new_df2['perc_margin'].astype(float).map("{:.1%}".format)
@@ -729,7 +729,7 @@ def update_figure3(state_select,year_select):
             return fig
 
         #Zoom Out One More from Main Pack Group
-        elif 'California' in state_select or 'Idaho' in state_select or 'Nevada' in state_select or 'Texas' in state_select or 'Florida' in state_select or 'Minnesota' in state_select or 'Michigan' in state_select:
+        elif 'California' in state_select or 'Texas' in state_select:
             fig = px.choropleth_mapbox(new_df2, geojson=counties, locations='fips_code_lz', color='per_gop',
                                     color_continuous_scale="balance", mapbox_style="carto-positron",hover_name="County", 
                                     zoom=4, center = {"lat": avg_lon, "lon": avg_lat}, opacity=0.5,
@@ -772,9 +772,10 @@ def update_figure3(state_select,year_select):
 @app.callback(
     Output('party_line_graph','figure'),
     Input('dropdown1','value'),
-    Input('state_map','clickData'))
+    Input('state_map','clickData')
+)
 
-def update_figure4(state_select,click_county_select):
+def update_party_line_graph(state_select,click_county_select):
 
         if click_county_select:
             new_df = elections[elections['State']==state_select]
@@ -791,13 +792,12 @@ def update_figure4(state_select,click_county_select):
             county_id = new_df['County'].iloc[0]
             new_df2 = new_df[new_df['County']==county_id]
 
-
-
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=new_df2['Year'], y=new_df2['per_gop'], name = 'GOP %',
-                         line=dict(color='firebrick', width=4)))
+
         fig.add_trace(go.Scatter(x=new_df2['Year'], y=new_df2['per_dem'], name = 'DEM %',
                          line=dict(color='royalblue', width=4)))
+        fig.add_trace(go.Scatter(x=new_df2['Year'], y=new_df2['per_gop'], name = 'GOP %',
+                         line=dict(color='firebrick', width=4)))
         fig.update_layout(
             legend=dict(
                 orientation="h",
@@ -806,24 +806,26 @@ def update_figure4(state_select,click_county_select):
                 xanchor="auto",
                 x=0.5
             ),
-            title=f"Results from {county_id}")
+            title=f"Results from {county_id}, {state_select}"
+        )
         fig.update_layout(
             title={'x':0.5,'xanchor': 'center','yanchor': 'top'},
             yaxis_tickformat = '%'
         )
+        fig.update_yaxes(tickformat=".0%")
 
 
         return fig
 
 
-#Configure reactivity for paragraph on state/county tab
+#Configure reactivity for state-county cards
 @app.callback(
     Output('card_state_county_header','children'),
     Output('card_state_county_details','children'),
     Input('dropdown1','value'),
     Input('state_map','clickData'))
 
-def update_figure5(state_select,click_county_select):
+def update_cards_for_state_stats(state_select,click_county_select):
     
     if click_county_select:
         new_df = elections[elections['State']==state_select]
@@ -857,7 +859,7 @@ def update_figure5(state_select,click_county_select):
     card2 = dbc.Card([
         dbc.CardBody([
             html.P('Voted for Winner'),
-            html.H6(f'{new_df2["match_vote"].sum()}/{new_df2.shape[0]} Elections'),
+            html.H6(f'{new_df2["match_vote"].sum()} out of {new_df2.shape[0]} Elections'),
         ])
     ],
     style={'display': 'inline-block',
@@ -872,7 +874,7 @@ def update_figure5(state_select,click_county_select):
     card3 = dbc.Card([
         dbc.CardBody([
             html.P('Voted for Democrat'),
-            html.H6(f'{new_df2["dem_win"].sum()}/{new_df2.shape[0]} Elections'),
+            html.H6(f'{new_df2["dem_win"].sum()} out of {new_df2.shape[0]} Elections'),
         ])
     ],
     style={'display': 'inline-block',
@@ -887,7 +889,7 @@ def update_figure5(state_select,click_county_select):
     card4 = dbc.Card([
         dbc.CardBody([
             html.P('Voted for Republican'),
-            html.H6(f'{new_df2["gop_win"].sum()}/{new_df2.shape[0]} Elections'),
+            html.H6(f'{new_df2["gop_win"].sum()} out of {new_df2.shape[0]} Elections'),
         ])
     ],
     style={'display': 'inline-block',
@@ -933,7 +935,7 @@ def update_figure5(state_select,click_county_select):
 
     return (card1) , (card2, card3, card4, card5, card6)
 
-
+#Configure reactivity for dynamic dropboxes - 1st one informs the 2nd
 @app.callback(
     Output('dropdown3', 'options'),
     Output('dropdown3', 'value'),
@@ -945,6 +947,7 @@ def set_county_options(radio_select,selected_state):
     else:
         return [{'label': i, 'value': i} for i in state_to_county2016[selected_state]], state_to_county2016[selected_state][0]
 
+#Configure reactivity for cluster map
 @app.callback(
     Output('cluster_map','figure'),
     Input('radio2','value'),
@@ -992,9 +995,9 @@ def cluster_map(radio_select, dd_select_state, dd_select_county):
     return fig
 
 
-#Configure reactivity for cluster paragraph 
+#Configure reactivity for cluster card header 
 @app.callback(
-    Output('metrics_for_clusterNUM','children'),
+    Output('cluster_county_header','children'),
     Input('radio2','value'),
     Input('dropdown2','value'),
     Input('dropdown3','value')
@@ -1012,9 +1015,6 @@ def cluster_header(radio_select,dd_state,dd_county):
         state_data = e_data[e_data['State']==dd_state]
         county_data = state_data[state_data['County']==dd_county]
 
-    #  Below you will find median metrics for this cluster.", className="card-title"),
-
-
     metrics_card_title = dbc.Card([
         dbc.CardBody([
             html.H5(f"{county_data['County'].values[0]} belongs to Cluster #{county_data['cluster'].values[0]}.  Below are the median cluster metrics:", className="card-title"),
@@ -1031,16 +1031,15 @@ def cluster_header(radio_select,dd_state,dd_county):
 
     return metrics_card_title
 
-
-#Configure reactivity for cluster stats row 1 
+#Configure reactivity for cluster stats row
 @app.callback(
-    Output('card_row','children'),
+    Output('cluster_stats_card_row','children'),
     Input('radio2','value'),
     Input('dropdown2','value'),
     Input('dropdown3','value')
 )
 
-def cluster_stats_row1(radio_select,dd_state,dd_county):
+def cluster_stats_row(radio_select,dd_state,dd_county):
 
     if '2012 Election' in radio_select:
         e_data = election2012_filtered
@@ -1108,6 +1107,7 @@ def cluster_stats_row1(radio_select,dd_state,dd_county):
            'fontSize':16},
     outline=True)
 
+
     
     card4 = dbc.Card([
         dbc.CardBody([
@@ -1140,6 +1140,10 @@ def cluster_stats_row1(radio_select,dd_state,dd_county):
     outline=True)
     
     return (card1, card2, card3, card4, card5)  
+
+
+
+
 
 #Configure reactivity for detailed cluster stats modal
 @app.callback(
@@ -1249,9 +1253,6 @@ def cluster_stats_modal_text2(radio_select,dd_state,dd_county):
 
     return cluster_modal_text
 
-
-
-
 #Configure Reactivity for Prediction State/County Map on Tab 6
 @app.callback(
     Output('predictions_map2024','figure'),
@@ -1267,8 +1268,6 @@ def update_pred_map(radio_select, state_select):
         avg_lat = new_df['AvgLat'].mean()
         avg_lon = new_df['AvgLon'].mean()
 
-        #add in steps to fix zoom depending on state selection, there is no one size fits all here, need to adjust
-
         new_df['dem_votes'] = new_df['dem_votes'].astype(float).map("{:,.0f}".format)
         new_df['gop_votes'] = new_df['gop_votes'].astype(float).map("{:,.0f}".format)
 
@@ -1280,6 +1279,7 @@ def update_pred_map(radio_select, state_select):
             if 'Rhode Island' in state_select or 'Connecticut' in state_select \
             or 'Massachusetts' in state_select or 'Delaware' in state_select or 'Vermont' in state_select \
             or 'Maryland' in state_select or 'New Jersey' in state_select:
+            
         
                 fig = px.choropleth_mapbox(new_df, geojson=counties, locations='fips_code_lz', color='per_gop',
                                     color_continuous_scale="balance",
@@ -1356,7 +1356,11 @@ def update_pred_map(radio_select, state_select):
                 fig.update_coloraxes(colorbar=dict(title='D - R Scale',showticklabels=False))
                     
                 return (fig), ({'display': 'inline-block', 'width': '100%'})
-            elif 'California' in state_select or 'Idaho' in state_select or 'Nevada' in state_select or 'Texas' in state_select or 'Florida' in state_select or 'Minnesota' in state_select or 'Michigan' in state_select:
+
+            elif 'California' in state_select or 'Nevada' in state_select or \
+                 'Texas' in state_select or 'Minnesota' in state_select or \
+                 'Michigan' in state_select or 'Florida' in state_select or 'Idaho' in state_select:
+
                 fig = px.choropleth_mapbox(new_df, geojson=counties, locations='fips_code_lz', color='per_gop',
                                     color_continuous_scale="balance",
                                     mapbox_style="carto-positron",
@@ -1437,9 +1441,10 @@ def update_pred_map(radio_select, state_select):
 
             return (fig), ({'display': 'none'})
 
+#Configure reactivity for prediction card stats
 @app.callback(
-    Output('card_row_state','children'),
-    Output('card_row_totals','children'),
+    Output('preds_card_row_header','children'),
+    Output('preds_card_row_totals','children'),
     Input('dropdown5','value'),
     Input('radio3','value'),
     Input('predictions_map2024','clickData'))
@@ -1474,7 +1479,7 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
 
         if 'State View' in radio_select:
 
-            card12 = dbc.Card([
+            card1 = dbc.Card([
                 dbc.CardBody([
                     html.H5(f'The {winner} candidate wins {e_votes} electoral votes.', className="card-title")
                 ])
@@ -1489,7 +1494,7 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
 
             outline=True)
 
-            card7 = dbc.Card([
+            card2 = dbc.Card([
                 dbc.CardBody([
                     html.P(f'Total {state_select} DEM Votes'),
                     html.H6(f"{new_df['dem_votes'].sum():,.0f}", className="card-title"),
@@ -1504,7 +1509,7 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
                 'fontSize':16},
             outline=True)
 
-            card8 = dbc.Card([
+            card3 = dbc.Card([
                 dbc.CardBody([
                     html.P(f'Total {state_select} GOP Votes'),
                     html.H6(f"{new_df['gop_votes'].sum():,.0f}", className="card-title"),
@@ -1520,7 +1525,7 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
                 'fontSize':16},
             outline=True)
 
-            card10 = dbc.Card([
+            card4 = dbc.Card([
                 dbc.CardBody([
                     html.P(f'% DEM Vote in {county_id}'),
                     html.H6(new_df2['per_dem'], className="card-title"),
@@ -1535,7 +1540,7 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
                 'fontSize':16},
             outline=True)
 
-            card11 = dbc.Card([
+            card5 = dbc.Card([
                 dbc.CardBody([
                     html.P(f'% GOP Vote in {county_id}'),
                     html.H6(new_df2['per_gop'], className="card-title"),
@@ -1553,7 +1558,7 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
 
     
 
-            return (card12), (card7, card8, card10, card11)
+            return (card1), (card2, card3, card4, card5)
         else:
             card6 = dbc.Card([
                 dbc.CardBody([
@@ -1636,6 +1641,8 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
            
             return (card6), (card7, card8, card9, card10)
 
+
+#Configure modal reactivity - open up
 @app.callback(
     Output("modal1", "is_open"),
     [Input("open1", "n_clicks"), 
@@ -1697,6 +1704,11 @@ def toggle_modal5(n1, n2, is_open):
     if n1 or n2:
         return not is_open
     return is_open
+# @app.callback(Output('click-data', 'children'),
+#     [Input('state_map', 'clickData')])
+# def display_click_data(map_click):
+#     return json.dumps(map_click, indent=2)
 
+#app.run_server(host='0.0.0.0',port='8051')
 if __name__=='__main__':
 	app.run_server()
