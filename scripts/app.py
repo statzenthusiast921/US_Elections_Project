@@ -15,15 +15,25 @@ import plotly.graph_objects as go
 
 #Read in datasets
 #1.) Full Elections Data
-elections = pd.read_excel("/Users/jonzimmerman/Desktop/Data Projects/Elections Project/Data/FullElectionsData.xlsx",
-                   dtype={"fips_code_lz": str})
+
+url1 = 'https://raw.githubusercontent.com/statzenthusiast921/US_Elections_Project/refs/heads/main/Data/FullElectionsData_updated2025.csv'
+
+elections = pd.read_csv(url1, encoding="latin1")
+
 #2 and #3.) Cluster Data
-election2012_filtered = pd.read_excel("/Users/jonzimmerman/Desktop/Data Projects/Elections Project/Data/Cluster Data/THECluster2012.xlsx",dtype={"fips_code_lz": str})
-election2016_filtered = pd.read_excel("/Users/jonzimmerman/Desktop/Data Projects/Elections Project/Data/Cluster Data/THECluster2016.xlsx",dtype={"fips_code_lz": str})
+url2 = 'https://raw.githubusercontent.com/statzenthusiast921/US_Elections_Project/refs/heads/main/Data/THECluster2012.csv'
+url3 = 'https://raw.githubusercontent.com/statzenthusiast921/US_Elections_Project/refs/heads/main/Data/THECluster2016.csv'
+url4 = 'https://raw.githubusercontent.com/statzenthusiast921/US_Elections_Project/refs/heads/main/Data/THECluster2020.csv'
+
+
+election2012_filtered = pd.read_csv(url2, encoding="latin1")
+election2016_filtered = pd.read_csv(url3, encoding="latin1")
+election2020_filtered = pd.read_csv(url4, encoding="latin1")
+
+election_choices = ['2012 Election', '2016 Election', '2020 Election']
+
 
 #4.) Predictions Data
-# preds = pd.read_excel("/Users/jonzimmerman/Desktop/Data Projects/Elections Project/Data/predictions2024.xlsx",
-#                    dtype={"fips_code_lz": str})
 preds = pd.read_excel("/Users/jonzimmerman/Desktop/Data Projects/Elections Project/Data/ARMA_predictions2024.xlsx",
                    dtype={"fips_code_lz": str})
 
@@ -43,36 +53,57 @@ preds['gop_votes_formatted'] = preds['gop_votes_formatted'].astype(float).map("{
 # 1. get rid of cluster 0
 election2012_filtered['cluster'] = election2012_filtered['cluster']+1
 election2016_filtered['cluster'] = election2016_filtered['cluster']+1
+election2020_filtered['cluster'] = election2020_filtered['cluster']+1
+
 
 election2012_filtered['cluster'] = election2012_filtered['cluster'].astype('str')
 election2016_filtered['cluster'] = election2016_filtered['cluster'].astype('str')
+election2020_filtered['cluster'] = election2020_filtered['cluster'].astype('str')
+
 #2.)
-election2012_filtered['% GOP'] = (election2012_filtered['% GOP']*100).round(1)
-election2012_filtered['% DEM'] = (election2012_filtered['% DEM']*100).round(1)
+election2012_filtered['% GOP'] = (election2012_filtered['per_gop']*100).round(1)
+election2012_filtered['% DEM'] = (election2012_filtered['per_dem']*100).round(1)
 
-election2016_filtered['% GOP'] = (election2016_filtered['% GOP']*100).round(1)
-election2016_filtered['% DEM'] = (election2016_filtered['% DEM']*100).round(1)
+election2016_filtered['% GOP'] = (election2016_filtered['per_gop']*100).round(1)
+election2016_filtered['% DEM'] = (election2016_filtered['per_dem']*100).round(1)
+
+election2020_filtered['% GOP'] = (election2020_filtered['per_gop']*100).round(1)
+election2020_filtered['% DEM'] = (election2020_filtered['per_dem']*100).round(1)
 #3.)
-election2012_filtered['% White'] = election2012_filtered['% White'].round(1)
-election2016_filtered['% White'] = election2016_filtered['% White'].round(1)
+election2012_filtered['% White'] = election2012_filtered['White_Perc'].round(1)
+election2016_filtered['% White'] = election2016_filtered['White_Perc'].round(1)
+election2020_filtered['% White'] = election2020_filtered['White_Perc'].round(1)
 
-election2012_filtered['% Black'] = election2016_filtered['% Black'].round(1)
-election2016_filtered['% Black'] = election2016_filtered['% Black'].round(1)
+
+election2012_filtered['% Black'] = election2016_filtered['Black_Perc'].round(1)
+election2016_filtered['% Black'] = election2016_filtered['Black_Perc'].round(1)
+election2020_filtered['% Black'] = election2020_filtered['Black_Perc'].round(1)
+
+
+
 #4.)
-election2012_filtered['% High School Diploma'] = election2012_filtered['% High School Diploma'].round(1)
-election2016_filtered['% High School Diploma'] = election2016_filtered['% High School Diploma'].round(1)
+election2012_filtered['% High School Diploma'] = election2012_filtered['HSGrad_Perc'].round(1)
+election2016_filtered['% High School Diploma'] = election2016_filtered['HSGrad_Perc'].round(1)
+election2020_filtered['% High School Diploma'] = election2020_filtered['HSGrad_Perc'].round(1)
 
-election2012_filtered['% Bachelors Degree'] = election2012_filtered['% Bachelors Degree'].round(1)
-election2016_filtered['% Bachelors Degree'] = election2016_filtered['% Bachelors Degree'].round(1)
+election2012_filtered['% Bachelors Degree'] = election2012_filtered['Bach_Perc'].round(1)
+election2016_filtered['% Bachelors Degree'] = election2016_filtered['Bach_Perc'].round(1)
+election2020_filtered['% Bachelors Degree'] = election2020_filtered['Bach_Perc'].round(1)
+
 #5.)
-election2012_filtered['% Women'] = election2012_filtered['% Women'].round(1)
-election2016_filtered['% Women'] = election2016_filtered['% Women'].round(1)
+election2012_filtered['% Women'] = election2012_filtered['Female_Perc'].round(1)
+election2016_filtered['% Women'] = election2016_filtered['Female_Perc'].round(1)
+election2020_filtered['% Women'] = election2020_filtered['Female_Perc'].round(1)
+
 #6.)
-election2012_filtered['Unemployment Rate'] = election2012_filtered['Unemployment Rate'].round(1)
-election2016_filtered['Unemployment Rate'] = election2016_filtered['Unemployment Rate'].round(1)
+election2012_filtered['Unemployment Rate'] = election2012_filtered['Unemp_Rate'].round(1)
+election2016_filtered['Unemployment Rate'] = election2016_filtered['Unemp_Rate'].round(1)
+election2020_filtered['Unemployment Rate'] = election2020_filtered['Unemp_Rate'].round(1)
+
 #7.)
-election2012_filtered['% Margin'] = (election2012_filtered['% Margin']).astype(float).map("{:.1%}".format)
-election2016_filtered['% Margin'] = (election2016_filtered['% Margin']).astype(float).map("{:.1%}".format)
+election2012_filtered['% Margin'] = (election2012_filtered['perc_margin']).astype(float).map("{:.1%}".format)
+election2016_filtered['% Margin'] = (election2016_filtered['perc_margin']).astype(float).map("{:.1%}".format)
+election2020_filtered['% Margin'] = (election2020_filtered['perc_margin']).astype(float).map("{:.1%}".format)
 
 #Create new columns
 elections['gop_win']=np.where(elections['per_gop']>elections['per_dem'], 1, 0)
@@ -112,7 +143,7 @@ elections['County'] = np.where(
     elections['County']
 )
 
-#formalize table order
+#Formalize table order
 table_show = elections[["State","County","Year","DEM Votes","GOP Votes","Margin","% Margin"]]
 table_show['Year'] = table_show['Year'].astype(str)
 
@@ -126,16 +157,16 @@ tab_style = {
     'borderBottom': '1px solid #d6d6d6',
     'padding': '6px',
     'fontWeight': 'bold',
-    #'backgroundColor':'green'
+    'color':'green',
+    'backgroundColor': '#222222'
 
 }
 
 tab_selected_style = {
     'borderTop': '1px solid #d6d6d6',
     'borderBottom': '1px solid #d6d6d6',
-    #'backgroundColor': '#087cfc',
-    'backgroundColor': '#70747c',
-    'color': 'white',
+    'backgroundColor': '#626ffb',
+    'color': 'blue',
     'padding': '6px'
 }
 
@@ -152,10 +183,13 @@ county_choices = elections['County'].sort_values().unique()
 #Create a dictionary of state-county key-value pairs for clustering dropdowns
 elections2012 = elections[elections['Year']==2012]
 elections2016 = elections[elections['Year']==2016]
+elections2020 = elections[elections['Year']==2020]
+
 
 state_to_county = elections.groupby('State')['County'].agg(list).to_dict()
 state_to_county2012 = elections2012.groupby('State')['County'].agg(list).to_dict()
 state_to_county2016 = elections2016.groupby('State')['County'].agg(list).to_dict()
+state_to_county2020 = elections2020.groupby('State')['County'].agg(list).to_dict()
 
 app = dash.Dash(__name__,
                 #external_stylesheets=[dbc.themes.SANDSTONE],
@@ -170,26 +204,26 @@ app.layout = html.Div([
         dcc.Tab(label='Welcome',value='tab-1',style=tab_style, selected_style=tab_selected_style,
                children=[
                    html.Div([
-                       html.H1(dcc.Markdown('''**Welcome To My US Presidential Elections Dashboard!**''')),
+                       html.H1(dcc.Markdown('''**Welcome To My US Presidential Elections Dashboard!**'''),style={'color':'white'}),
                        html.Br()
                    ]),
                    
                    html.Div([
-                        html.P(dcc.Markdown('''**What is the purpose of this dashboard?**''')),
+                        html.P(dcc.Markdown('''**What is the purpose of this dashboard?**'''),style={'color':'white'}),
                    ],style={'text-decoration': 'underline'}),
                    html.Div([
-                       html.P("This dashboard attempts to answer several questions:"),
-                       html.P("1.) How has the United States vote for President has changed over time?"),
-                       html.P("2.) What are the characteristics of counties that vote similarly?"),
-                       html.P("3.) What will the results of the next election look like?")
+                       html.P("This dashboard attempts to answer several questions:",style={'color':'white'}),
+                       html.P("1.) How has the United States vote for President has changed over time?",style={'color':'white'}),
+                       html.P("2.) What are the characteristics of counties that vote similarly?",style={'color':'white'}),
+                       html.P("3.) What will the results of the next election look like?",style={'color':'white'})
 
                    ]),
                    html.Div([
-                       html.P(dcc.Markdown('''**What data is being used for this analysis?**''')),
+                       html.P(dcc.Markdown('''**What data is being used for this analysis?**'''),style={'color':'white'}),
                    ],style={'text-decoration': 'underline'}),
                    
                    html.Div([
-                       html.P(["Data from each US presidential election from 1960 to 2020 was included in this analysis.  Most of the data was gathered from this ", html.A("Github repository",href="https://github.com/cilekagaci/us-presidential-county-1960-2016")," covering elections from 1960 to 2016.  Data for the 2020 election was obtained from this ",html.A(" repository.",href="https://github.com/tonmcg/US_County_Level_Election_Results_08-20")]),
+                       html.P(["Data from each US presidential election from 1960 to 2024 was included in this analysis.  Most of the data was gathered from this ", html.A("Github repository",href="https://github.com/cilekagaci/us-presidential-county-1960-2016")," covering elections from 1960 to 2016.  Data for the 2020 election was obtained from this ",html.A(" repository.",href="https://github.com/tonmcg/US_County_Level_Election_Results_08-20")]),
                        html.P(["To inform the clustering algorithm, county-level socioeconomic data was pulled from this link" ,html.A(" here ",href="https://www.ahrq.gov/sdoh/data-analytics/sdoh-data.html"), "from the Agency for Healthcare Research and Quality."])
                    ]),
                    html.Div([
@@ -300,7 +334,7 @@ app.layout = html.Div([
                         dbc.ModalHeader("Instructions"),
                         dbc.ModalBody(
                             children=[
-                                html.P("To the right of this button, you will find the controls for this page.  You can select any election year from 1960 to 2020 to change the map below."),
+                                html.P("To the right of this button, you will find the controls for this page.  You can select any election year from 1960 to 2024 to change the map below."),
                                 html.P("Choose a state from the dropdown menu to view results by county for your preferred state."),
                                 html.P("If you click on any county on the map, the graph on the right will populate with the % of the vote earned by the two major parties plotted over time for the selected county.")
                             ]
@@ -405,17 +439,14 @@ app.layout = html.Div([
                     html.P('')
                 ],style={'width':'10%','display':'inline-block'}),
                 html.Div([
-                    #Choose between 2012 and 2016 election years
-                    dbc.RadioItems(
-                        id='radio2',
-                        options=[
-                            {'label': ' 2012 Election', 'value': '2012 Election'},
-                            {'label': ' 2016 Election', 'value': '2016 Election'}
-                        ],
-                        value='2012 Election',
-                        labelStyle={'display': 'inline-block'}
-
+                    #Choose between 2012, 2016, 2020 election years
+                    dcc.Dropdown(
+                        # Formally radio2
+                        id='dropdown4',
+                        options=[{'label': i, 'value': i} for i in election_choices],
+                        value=election_choices[0]
                     )
+                  
                 ],style={'width':'15%','display':'inline-block','vertical-align':'top','text-align': 'left'}),
 
                 html.Div([
@@ -939,53 +970,61 @@ def update_cards_for_state_stats(state_select,click_county_select):
 @app.callback(
     Output('dropdown3', 'options'),
     Output('dropdown3', 'value'),
-    Input('radio2','value'),
+    Input('dropdown4','value'),
     Input('dropdown2', 'value'))
-def set_county_options(radio_select,selected_state):
-    if '2012 Election' in radio_select:
+def set_county_options(dd4,selected_state):
+    if '2012 Election' in dd4:
         return [{'label': i, 'value': i} for i in state_to_county2012[selected_state]], state_to_county2012[selected_state][0]
-    else:
+    elif '2016 Election' in dd4:
         return [{'label': i, 'value': i} for i in state_to_county2016[selected_state]], state_to_county2016[selected_state][0]
+    else:
+        return [{'label': i, 'value': i} for i in state_to_county2020[selected_state]], state_to_county2020[selected_state][0]
+
 
 #Configure reactivity for cluster map
 @app.callback(
     Output('cluster_map','figure'),
-    Input('radio2','value'),
+    Input('dropdown4','value'),
     Input('dropdown2','value'),
     Input('dropdown3','value')
 )
-def cluster_map(radio_select, dd_select_state, dd_select_county):
+def cluster_map(dd4, dd_select_state, dd_select_county):
 
-    if '2012 Election' in radio_select:
+    if '2012 Election' in dd4:
         e_data = election2012_filtered
-        state_data = e_data[e_data['State']==dd_select_state]
-        county_data = state_data[state_data['County']==dd_select_county]
+        state_data = e_data[e_data['state_name']==dd_select_state]
+        county_data = state_data[state_data['county_name']==dd_select_county]
         filtered = e_data[e_data['cluster']==county_data['cluster'].values[0]]
 
-    else:
+    elif '2016 Election' in dd4:
         e_data = election2016_filtered
-        state_data = e_data[e_data['State']==dd_select_state]
-        county_data = state_data[state_data['County']==dd_select_county]
+        state_data = e_data[e_data['state_name']==dd_select_state]
+        county_data = state_data[state_data['county_name']==dd_select_county]
+        filtered = e_data[e_data['cluster']==county_data['cluster'].values[0]]
+    else:
+        e_data = election2020_filtered
+        state_data = e_data[e_data['state_name']==dd_select_state]
+        county_data = state_data[state_data['county_name']==dd_select_county]
         filtered = e_data[e_data['cluster']==county_data['cluster'].values[0]]
 
-    filtered['GOP Votes'] = filtered['GOP Votes'].map("{:,.0f}".format)
-    filtered['DEM Votes'] = filtered['DEM Votes'].map("{:,.0f}".format)
+    filtered['GOP Votes'] = filtered['gop_votes'].map("{:,.0f}".format)
+    filtered['DEM Votes'] = filtered['dem_votes'].map("{:,.0f}".format)
                                                         
 
     fig = px.choropleth_mapbox(filtered, geojson=counties, locations='fips_code_lz', color='cluster',
-                                hover_name="County", 
+                                hover_name="county_name", 
                                 color_continuous_scale="Viridis",
                                 mapbox_style="carto-positron",
                                 hover_data = {
                                     "fips_code_lz":False,
-                                    "State":True,
+                                    "state_name":True,
                                     "DEM Votes":True,
                                     "GOP Votes":True,
                                     "% Margin":True,
 
                                 },
                                 labels={'cluster':'Cluster',
-                                        'State':'State',
+                                        'state_name':'State',
                                         'DEM Votes':'Democratic Votes',
                                         'GOP Votes':'Republican Votes',
                                         'perc_margin':'% Margin'},
@@ -998,26 +1037,30 @@ def cluster_map(radio_select, dd_select_state, dd_select_county):
 #Configure reactivity for cluster card header 
 @app.callback(
     Output('cluster_county_header','children'),
-    Input('radio2','value'),
+    Input('dropdown4','value'),
     Input('dropdown2','value'),
     Input('dropdown3','value')
 )
 
-def cluster_header(radio_select,dd_state,dd_county):
+def cluster_header(dd4,dd_state,dd_county):
 
-    if '2012 Election' in radio_select:
+    if '2012 Election' in dd4:
         e_data = election2012_filtered
-        state_data = e_data[e_data['State']==dd_state]
-        county_data = state_data[state_data['County']==dd_county]
+        state_data = e_data[e_data['state_name']==dd_state]
+        county_data = state_data[state_data['county_name']==dd_county]
 
-    else: 
+    elif '2016 Election' in dd4: 
         e_data = election2016_filtered
-        state_data = e_data[e_data['State']==dd_state]
-        county_data = state_data[state_data['County']==dd_county]
+        state_data = e_data[e_data['state_name']==dd_state]
+        county_data = state_data[state_data['county_name']==dd_county]
+    else:
+        e_data = election2020_filtered
+        state_data = e_data[e_data['state_name']==dd_state]
+        county_data = state_data[state_data['county_name']==dd_county]
 
     metrics_card_title = dbc.Card([
         dbc.CardBody([
-            html.H5(f"{county_data['County'].values[0]} belongs to Cluster #{county_data['cluster'].values[0]}.  Below are the median cluster metrics:", className="card-title"),
+            html.H5(f"{county_data['county_name'].values[0]} belongs to Cluster #{county_data['cluster'].values[0]}.  Below are the median cluster metrics:", className="card-title"),
         ])
     ],
     style={'display': 'inline-block',
@@ -1034,32 +1077,37 @@ def cluster_header(radio_select,dd_state,dd_county):
 #Configure reactivity for cluster stats row
 @app.callback(
     Output('cluster_stats_card_row','children'),
-    Input('radio2','value'),
+    Input('dropdown4','value'),
     Input('dropdown2','value'),
     Input('dropdown3','value')
 )
 
-def cluster_stats_row(radio_select,dd_state,dd_county):
+def cluster_stats_row(dd4,dd_state,dd_county):
 
-    if '2012 Election' in radio_select:
+    if '2012 Election' in dd4:
         e_data = election2012_filtered
-        state_data = e_data[e_data['State']==dd_state]
-        county_data = state_data[state_data['County']==dd_county]
+        state_data = e_data[e_data['state_name']==dd_state]
+        county_data = state_data[state_data['county_name']==dd_county]
         filtered = e_data[e_data['cluster']==county_data['cluster'].values[0]]
 
-    else: 
+    elif '2016 Election' in dd4: 
         e_data = election2016_filtered
-        state_data = e_data[e_data['State']==dd_state]
-        county_data = state_data[state_data['County']==dd_county]
+        state_data = e_data[e_data['state_name']==dd_state]
+        county_data = state_data[state_data['county_name']==dd_county]
+        filtered = e_data[e_data['cluster']==county_data['cluster'].values[0]]
+    else:
+        e_data = election2020_filtered
+        state_data = e_data[e_data['state_name']==dd_state]
+        county_data = state_data[state_data['county_name']==dd_county]
         filtered = e_data[e_data['cluster']==county_data['cluster'].values[0]]
 
 
     gop_formatted = f"{filtered['% GOP'].median():,.1f}%"
     dem_formatted = f"{filtered['% DEM'].median():,.1f}%"
 
-    income_formatted = f"${filtered['Per Capita Income'].median():,.2f}"
-    unemp_formatted = f"{filtered['Unemployment Rate'].median():,.1f}%"
-    pop_formatted = f"{filtered['Population'].median():,.0f}"
+    income_formatted = f"${filtered['PC_PI'].median():,.2f}"
+    unemp_formatted = f"{filtered['Unemp_Rate'].median():,.1f}%"
+    pop_formatted = f"{filtered['Pop'].median():,.0f}"
     
     card1 = dbc.Card([
         dbc.CardBody([
@@ -1148,51 +1196,56 @@ def cluster_stats_row(radio_select,dd_state,dd_county):
 #Configure reactivity for detailed cluster stats modal
 @app.callback(
     Output('cluster_modal_text','children'),
-    Input('radio2','value'),
+    Input('dropdown4','value'),
     Input('dropdown2','value'),
     Input('dropdown3','value')
 )
 
-def cluster_stats_modal_text2(radio_select,dd_state,dd_county):
+def cluster_stats_modal_text2(dd4,dd_state,dd_county):
 
-    if '2012 Election' in radio_select:
+    if '2012 Election' in dd4:
         e_data = election2012_filtered
-        state_data = e_data[e_data['State']==dd_state]
-        county_data = state_data[state_data['County']==dd_county]
+        state_data = e_data[e_data['state_name']==dd_state]
+        county_data = state_data[state_data['county_name']==dd_county]
         filtered = e_data[e_data['cluster']==county_data['cluster'].values[0]]
 
-    else: 
+    elif '2016 Election' in dd4: 
         e_data = election2016_filtered
-        state_data = e_data[e_data['State']==dd_state]
-        county_data = state_data[state_data['County']==dd_county]
+        state_data = e_data[e_data['state_name']==dd_state]
+        county_data = state_data[state_data['county_name']==dd_county]
+        filtered = e_data[e_data['cluster']==county_data['cluster'].values[0]]
+    else: 
+        e_data = election2020_filtered
+        state_data = e_data[e_data['state_name']==dd_state]
+        county_data = state_data[state_data['county_name']==dd_county]
         filtered = e_data[e_data['cluster']==county_data['cluster'].values[0]]
 
 
     perc_dem_formatted = f"{filtered['% DEM'].median():,.1f}%"
     perc_gop_formatted = f"{filtered['% GOP'].median():,.1f}%"
 
-    perc_hs_dip_formatted = f"{filtered['% High School Diploma'].median():,.1f}"
-    perc_bach_deg_formatted = f"{filtered['% Bachelors Degree'].median():,.1f}"
-    perc_grad_deg_formatted = f"{filtered['% Graduate Degree'].median():,.1f}"
+    perc_hs_dip_formatted = f"{filtered['HSGrad_Perc'].median():,.1f}"
+    perc_bach_deg_formatted = f"{filtered['Bach_Perc'].median():,.1f}"
+    perc_grad_deg_formatted = f"{filtered['GradDeg_Perc'].median():,.1f}"
 
-    perc_women_formatted = f"{filtered['% Women'].median():,.1f}"
-    perc_white_formatted = f"{filtered['% White'].median():,.1f}"
-    perc_black_formatted = f"{filtered['% Black'].median():,.1f}"
-    perc_amer_ind_formatted = f"{filtered['% American Indian'].median():,.1f}"
-    perc_asian_formatted = f"{filtered['% Asian'].median():,.1f}"
-    perc_hispanic_formatted = f"{filtered['% Hispanic'].median():,.1f}"
-    perc_for_born_formatted = f"{filtered['% Veteran'].median():,.1f}"
-    perc_veteran_formatted = f"{filtered['% Foreign Born'].median():,.1f}"
-    age_formatted = f"{filtered['Age'].median():,.1f}"
+    perc_women_formatted = f"{filtered['Female_Perc'].median():,.1f}"
+    perc_white_formatted = f"{filtered['White_Perc'].median():,.1f}"
+    perc_black_formatted = f"{filtered['Black_Perc'].median():,.1f}"
+    perc_amer_ind_formatted = f"{filtered['AmInd_Perc'].median():,.1f}"
+    perc_asian_formatted = f"{filtered['Asian_Perc'].median():,.1f}"
+    perc_hispanic_formatted = f"{filtered['Hisp_Perc'].median():,.1f}"
+    perc_for_born_formatted = f"{filtered['Vet_Perc'].median():,.1f}"
+    perc_veteran_formatted = f"{filtered['Foreign_Perc'].median():,.1f}"
+    age_formatted = f"{filtered['Median_Age'].median():,.1f}"
 
-    per_capita_income_formatted = f"${filtered['Per Capita Income'].median():,.2f}"
-    perc_unemployed_formatted = f"{filtered['Unemployment Rate'].median():.1f}%"
-    household_size_formatted = f"{filtered['Household Size'].median():.1f}"
-    gini_formatted = f"{filtered['Gini Index'].median():.1f}"
-    violent_crime_formatted = f"{filtered['Violent Crime'].median():.1f}"
+    per_capita_income_formatted = f"${filtered['PC_PI'].median():,.2f}"
+    perc_unemployed_formatted = f"{filtered['Unemp_Rate'].median():.1f}%"
+    household_size_formatted = f"{filtered['HH_Size'].median():.1f}"
+    gini_formatted = f"{filtered['Gini_Index'].median():.1f}"
+    #violent_crime_formatted = f"{filtered['Violent Crime'].median():.1f}"
 
-    population_formatted = f"{filtered['Population'].median():,.0f}"
-    land_area_formatted = f"{filtered['Sq. Meters Area Land'].median():,.1f}"
+    population_formatted = f"{filtered['Pop'].median():,.0f}"
+    land_area_formatted = f"{filtered['SQM_AreaLand'].median():,.1f}"
 
 
     cluster_modal_text = html.P(
@@ -1240,7 +1293,7 @@ def cluster_stats_modal_text2(radio_select,dd_state,dd_county):
             html.Br(),
             f"4.) Gini Index of Income Inequality: {gini_formatted}",
             html.Br(),
-            f"5.) Violent Crime Reports per 100,000 people: {violent_crime_formatted}",
+            #f"5.) Violent Crime Reports per 100,000 people: {violent_crime_formatted}",
             html.Br(),
             html.Br(),
             dcc.Markdown('''**Population Density**'''),
@@ -1284,7 +1337,7 @@ def update_pred_map(radio_select, state_select):
                 fig = px.choropleth_mapbox(new_df, geojson=counties, locations='fips_code_lz', color='per_gop',
                                     color_continuous_scale="balance",
                                     mapbox_style="carto-positron",
-                                    hover_name="County", 
+                                    hover_name="county_name", 
                                     zoom=6, 
                                     center = {"lat": avg_lon, "lon": avg_lat},
                                     opacity=0.5,
@@ -1294,8 +1347,8 @@ def update_pred_map(radio_select, state_select):
                                     hover_data = {
                                         "fips_code_lz":False,
                                         "per_gop":False,
-                                        "State":False,
-                                        "County":False,
+                                        "state_name":False,
+                                        "county_name":False,
                                         "dem_votes":True,
                                         "gop_votes":True,
                                         "perc_margin":True
@@ -1310,7 +1363,7 @@ def update_pred_map(radio_select, state_select):
                 fig = px.choropleth_mapbox(new_df, geojson=counties, locations='fips_code_lz', color='per_gop',
                                     color_continuous_scale="balance",
                                     mapbox_style="carto-positron",
-                                    hover_name="County", 
+                                    hover_name="county_name", 
                                     zoom=8, 
                                     center = {"lat": avg_lon, "lon": avg_lat},
                                     opacity=0.5,
@@ -1320,8 +1373,8 @@ def update_pred_map(radio_select, state_select):
                                     hover_data = {
                                         "fips_code_lz":False,
                                         "per_gop":False,
-                                        "State":False,
-                                        "County":False,
+                                        "state_name":False,
+                                        "county_name":False,
                                         "dem_votes":True,
                                         "gop_votes":True,
                                         "perc_margin":True
@@ -1335,7 +1388,7 @@ def update_pred_map(radio_select, state_select):
                 fig = px.choropleth_mapbox(new_df, geojson=counties, locations='fips_code_lz', color='per_gop',
                                     color_continuous_scale="balance",
                                     mapbox_style="carto-positron",
-                                    hover_name="County", 
+                                    hover_name="county_name", 
                                     zoom=2, 
                                     center = {"lat": avg_lon, "lon": avg_lat},
                                     opacity=0.5,
@@ -1345,8 +1398,8 @@ def update_pred_map(radio_select, state_select):
                                     hover_data = {
                                         "fips_code_lz":False,
                                         "per_gop":False,
-                                        "State":False,
-                                        "County":False,
+                                        "state_name":False,
+                                        "county_name":False,
                                         "dem_votes":True,
                                         "gop_votes":True,
                                         "perc_margin":True
@@ -1364,7 +1417,7 @@ def update_pred_map(radio_select, state_select):
                 fig = px.choropleth_mapbox(new_df, geojson=counties, locations='fips_code_lz', color='per_gop',
                                     color_continuous_scale="balance",
                                     mapbox_style="carto-positron",
-                                    hover_name="County", 
+                                    hover_name="county_name", 
                                     zoom=4, 
                                     center = {"lat": avg_lon, "lon": avg_lat},
                                     opacity=0.5,
@@ -1374,8 +1427,8 @@ def update_pred_map(radio_select, state_select):
                                     hover_data = {
                                         "fips_code_lz":False,
                                         "per_gop":False,
-                                        "State":False,
-                                        "County":False,
+                                        "state_name":False,
+                                        "county_name":False,
                                         "dem_votes":True,
                                         "gop_votes":True,
                                         "perc_margin":True
@@ -1389,7 +1442,7 @@ def update_pred_map(radio_select, state_select):
                 fig = px.choropleth_mapbox(new_df, geojson=counties, locations='fips_code_lz', color='per_gop',
                                     color_continuous_scale="balance",
                                     mapbox_style="carto-positron",
-                                    hover_name="County", 
+                                    hover_name="county_name", 
                                     zoom=5, 
                                     center = {"lat": avg_lon, "lon": avg_lat},
                                     opacity=0.5,
@@ -1399,8 +1452,8 @@ def update_pred_map(radio_select, state_select):
                                     hover_data = {
                                         "fips_code_lz":False,
                                         "per_gop":False,
-                                        "State":False,
-                                        "County":False,
+                                        "state_name":False,
+                                        "county_name":False,
                                         "dem_votes":True,
                                         "gop_votes":True,
                                         "perc_margin":True
@@ -1413,7 +1466,7 @@ def update_pred_map(radio_select, state_select):
 
         else:
 
-            fig = px.scatter_mapbox(preds, lat="Lon", lon="Lat", hover_name="County", 
+            fig = px.scatter_mapbox(preds, lat="Lon", lon="Lat", hover_name="county_name", 
                                         color_continuous_scale="balance",
                                         color="per_gop",
                                         hover_data = {
@@ -1422,13 +1475,13 @@ def update_pred_map(radio_select, state_select):
                                                 "Lat":False,
                                                 "fips_code_lz":False,
                                                 "per_gop":False,
-                                                "State":True,
-                                                "County":False,
+                                                "state_name":True,
+                                                "county_name":False,
                                                 "dem_votes_formatted":True,
                                                 "gop_votes_formatted":True,
                                                 "perc_margin_formatted":True
                                         },
-                                        labels={'State':'State',
+                                        labels={'state_name':'State',
                                                 'dem_votes_formatted':'Democratic Votes',
                                                 'gop_votes_formatted':'Republican Votes',
                                                 'perc_margin_formatted':'% Margin'},
@@ -1709,6 +1762,6 @@ def toggle_modal5(n1, n2, is_open):
 # def display_click_data(map_click):
 #     return json.dumps(map_click, indent=2)
 
-#app.run_server(host='0.0.0.0',port='8051')
-if __name__=='__main__':
-	app.run_server()
+app.run_server(host='0.0.0.0',port='8056')
+# if __name__=='__main__':
+# 	app.run_server()
