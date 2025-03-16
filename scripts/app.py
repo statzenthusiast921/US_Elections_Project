@@ -57,16 +57,9 @@ election2020_filtered['fips_code_lz'] = np.where(
 election_choices = ['2012 Election', '2016 Election', '2020 Election']
 
 
-#4.) Predictions Data
-# preds = pd.read_excel("/Users/jonzimmerman/Desktop/Data Projects/Elections Project/Data/ARMA_predictions2024.xlsx",
-#                    dtype={"fips_code_lz": str})
 url5 = 'https://raw.githubusercontent.com/statzenthusiast921/US_Elections_Project/refs/heads/main/Data/vote_totals_2024.csv'
 preds = pd.read_csv(url5)
-
 preds['year'] = 2024
-
-
-
 
 preds['dem_votes_actuals_formatted'] = preds['dem_votes_actuals'].copy()
 preds['dem_votes_actuals_formatted'] = preds['dem_votes_actuals_formatted'].astype(float).map("{:,.0f}".format)
@@ -122,82 +115,78 @@ state_preds['win'] = np.where(
 state_preds = state_preds[['state_name','win']]
 preds = pd.merge(preds, state_preds, how='left', on=['state_name'])
 
+#----- Fix Virginia Lat/Lons
+mask1 = (preds['state_name'] == "Virginia") & (preds['AvgLat'].isna())
+preds.loc[mask1, 'AvgLat'] = -78.517302
+
+mask2 = (preds['state_name'] == "Virginia") & (preds['AvgLon'].isna())
+preds.loc[mask2, 'AvgLon'] = 37.563641
+
 #----- Prediction dataset for 2028
 url6 = 'https://raw.githubusercontent.com/statzenthusiast921/US_Elections_Project/refs/heads/main/Data/df2028.csv'
 preds2028 = pd.read_csv(url6)
-
 preds2028['year'] = 2028
 
-#----- Add in the EV
-preds2028.groupby('state_name')[['gop_votes','dem_votes']].sum()
-state_totals = preds2028.groupby('state_name')[['gop_votes', 'dem_votes']].sum().reset_index()
-state_totals['dem_winner'] = np.where(state_totals['dem_votes']>state_totals['gop_votes'],1 ,0)
-state_totals['gop_winner'] = np.where(state_totals['gop_votes']>state_totals['dem_votes'],1 ,0)
-
-conditions = [
-    state_totals['state_name'] == 'Alabama',
-    state_totals['state_name'] == 'Alaska',
-    state_totals['state_name'] == 'Arizona',
-    state_totals['state_name'] == 'Arkansas',
-    state_totals['state_name'] == 'California',
-    state_totals['state_name'] == 'Colorado',
-    state_totals['state_name'] == 'Connecticut',
-    state_totals['state_name'] == 'Delaware',
-    state_totals['state_name'] == 'District of Columbia',
-    state_totals['state_name'] == 'Florida',
-    state_totals['state_name'] == 'Georgia',
-    state_totals['state_name'] == 'Hawaii',
-    state_totals['state_name'] == 'Idaho',
-    state_totals['state_name'] == 'Illinois',
-    state_totals['state_name'] == 'Indiana',
-    state_totals['state_name'] == 'Iowa',
-    state_totals['state_name'] == 'Kansas',
-    state_totals['state_name'] == 'Kentucky',
-    state_totals['state_name'] == 'Louisiana',
-    state_totals['state_name'] == 'Maine',
-    state_totals['state_name'] == 'Maryland',
-    state_totals['state_name'] == 'Massachusetts',
-    state_totals['state_name'] == 'Michigan',
-    state_totals['state_name'] == 'Minnesota',
-    state_totals['state_name'] == 'Mississippi',
-    state_totals['state_name'] == 'Missouri',
-    state_totals['state_name'] == 'Montana',
-    state_totals['state_name'] == 'Nebraska',
-    state_totals['state_name'] == 'Nevada',
-    state_totals['state_name'] == 'New Hampshire',
-    state_totals['state_name'] == 'New Jersey',
-    state_totals['state_name'] == 'New Mexico',
-    state_totals['state_name'] == 'New York',
-    state_totals['state_name'] == 'North Carolina',
-    state_totals['state_name'] == 'North Dakota',
-    state_totals['state_name'] == 'Ohio',
-    state_totals['state_name'] == 'Oklahoma',
-    state_totals['state_name'] == 'Oregon',
-    state_totals['state_name'] == 'Pennsylvania',
-    state_totals['state_name'] == 'Rhode Island',
-    state_totals['state_name'] == 'South Carolina',
-    state_totals['state_name'] == 'South Dakota',
-    state_totals['state_name'] == 'Tennessee',
-    state_totals['state_name'] == 'Texas',
-    state_totals['state_name'] == 'Utah',
-    state_totals['state_name'] == 'Vermont',
-    state_totals['state_name'] == 'Virginia',
-    state_totals['state_name'] == 'Washington',
-    state_totals['state_name'] == 'West Virginia',
-    state_totals['state_name'] == 'Wisconsin',
-    state_totals['state_name'] == 'Wyoming'
+preds2028.drop(columns=['Avglat'], inplace=True)
+preds2028['fips_code_lz'] = preds2028['fips_code_lz'].astype('str')
+preds2028['fips_code_lz'] = np.where(
+    preds2028['fips_code_lz'].str.len() == 4,
+    "0" + preds2028['fips_code_lz'],
+    preds2028['fips_code_lz']
+)
 
 
-]
 
-choices = [
-    9,3,11,6,54,10,7,3,3,30,16,4,4,19,11,6,6,8,8,4,
-    10,11,15,10,6,10,4,5,6,4,14,5,28,16,3,17,7,8,
-    19,4,9,3,11,40,6,3,13,12,4,10,3
+coords = preds[['fips_code_lz','AvgLon','AvgLat','Lon','Lat']].drop_duplicates()
+preds2028 = pd.merge(preds2028, coords, how = 'left', on = ['fips_code_lz'])
 
-]
+preds2028['dem_votes_formatted'] = preds2028['dem_votes'].copy()
+preds2028['dem_votes_formatted'] = preds2028['dem_votes_formatted'].astype(float).map("{:,.0f}".format)
 
-state_totals['EV'] = np.select(conditions, choices)
+preds2028['gop_votes_formatted'] = preds2028['gop_votes'].copy()
+preds2028['gop_votes_formatted'] = preds2028['gop_votes_formatted'].astype(float).map("{:,.0f}".format)
+
+preds2028['perc_margin_formatted'] = preds2028['perc_margin'].copy()
+preds2028['perc_margin_formatted'] = preds2028['perc_margin_formatted'].astype(float).map("{:,.0f}".format)
+
+#----- Fix Virginia coordinates
+mask3 = (preds2028['state_name'] == "Virginia") & (preds2028['AvgLat'].isna())
+preds2028.loc[mask3, 'AvgLat'] = -78.517302
+
+mask4 = (preds2028['state_name'] == "Virginia") & (preds2028['AvgLon'].isna())
+preds2028.loc[mask4, 'AvgLon'] = 37.563641
+
+
+#----- Fix fips code in 2024 for Virginia
+fips_va_2028 = preds2028[preds2028['state_name']=="Virginia"][['state_name','county_name','fips_code_lz']]
+fips_va_2028_renamed = fips_va_2028.rename(columns={'fips_code_lz': 'correct_fips'})
+preds = preds.merge(fips_va_2028_renamed, on=['state_name', 'county_name'], how='left')
+preds['fips_code_lz'] = preds.apply(
+    lambda row: row['correct_fips'] if (row['state_name'] == 'Virginia' and row['fips_code_lz'] == '99999') else row['fips_code_lz'],
+    axis=1
+)
+
+
+
+#----- Get Lat/Lon in for VA for both 2024 and 2028 preds
+va_lat_lon = elections[elections['state_name']=="Virginia"][['state_name','county_name','fips_code_lz','Lat','Lon']].drop_duplicates()
+va_lat_lon_renamed = va_lat_lon.rename(
+    columns={
+        'Lat': 'Lat_update', 
+        'Lon': 'Lon_update'
+    }
+)
+
+# Function to update a dataset
+def update_lat_lon(df):
+    df = df.merge(va_lat_lon_renamed, on=['state_name', 'county_name', 'fips_code_lz'], how='left')
+    df['Lat'] = df['Lat_update'].combine_first(df['Lat'])
+    df['Lon'] = df['Lon_update'].combine_first(df['Lon'])
+    return df.drop(columns=['Lat_update', 'Lon_update'])
+
+preds = update_lat_lon(preds)
+preds2028 = update_lat_lon(preds2028)
+
 
 #Fix cluster columns
 
@@ -1878,7 +1867,7 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
         else:
             card6 = dbc.Card([
                 dbc.CardBody([
-                    html.H5(f'The {pred_country_winner} candidate wins the election with {e_votes} electoral votes.', className="card-title"),
+                    html.H5(f'The {pred_country_winner} candidate was predicted to win the 2024 election with {e_votes} electoral votes.', className="card-title"),
                     html.H6(f'*Alaska vote totals excluded from popular vote.', className="card-title")
 
                 ])
@@ -1895,7 +1884,7 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
             card7 = dbc.Card([
                 dbc.CardBody([
                     html.P('DEM Electoral College Votes'),
-                    html.H6('287', className="card-title"),
+                    html.H6(287, className="card-title"),
                 ])
             ],
             style={'display': 'inline-block',
@@ -1968,17 +1957,15 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
     Input('dropdown6','value'))
 
 def update_pred_map2028(radio_select, state_select):
-        new_df = preds[preds['state_name']==state_select]
-        new_df['perc_margin_preds'] = new_df['perc_margin_preds'].astype(float).map("{:.1%}".format)
 
+        new_df = preds2028[preds2028['state_name']==state_select]
+        new_df['perc_margin'] = new_df['perc_margin'].astype(float).map("{:.1%}".format)
 
         avg_lat = new_df['AvgLat'].mean()
         avg_lon = new_df['AvgLon'].mean()
 
-        new_df['dem_votes_preds'] = new_df['dem_votes_preds'].astype(float).map("{:,.0f}".format)
-        new_df['gop_votes_preds'] = new_df['gop_votes_preds'].astype(float).map("{:,.0f}".format)
-
-
+        new_df['dem_votes'] = new_df['dem_votes'].astype(float).map("{:,.0f}".format)
+        new_df['gop_votes'] = new_df['gop_votes'].astype(float).map("{:,.0f}".format)
 
         if 'State View' in radio_select:
 
@@ -1991,25 +1978,25 @@ def update_pred_map2028(radio_select, state_select):
                 fig = px.choropleth_mapbox(new_df, 
                                     geojson=counties, 
                                     locations='fips_code_lz', 
-                                    color='per_gop_preds',
-                                    range_color=(preds['per_gop_preds'].min(), preds['per_gop_preds'].max()),  
+                                    color='per_gop',
+                                    range_color=(preds2028['per_gop'].min(), preds2028['per_gop'].max()),  
                                     color_continuous_scale="balance",
                                     mapbox_style="carto-positron",
                                     hover_name="county_name", 
                                     zoom=6, 
                                     center = {"lat": avg_lon, "lon": avg_lat},
                                     opacity=0.5,
-                                    labels={'dem_votes_preds':'Democratic Votes',
-                                            'gop_votes_preds':'Republican Votes',
-                                            'perc_margin_preds':'% Margin'},
+                                    labels={'dem_votes':'Democratic Votes',
+                                            'gop_votes':'Republican Votes',
+                                            'perc_margin':'% Margin'},
                                     hover_data = {
                                         "fips_code_lz":False,
-                                        "per_gop_preds":False,
+                                        "per_gop":False,
                                         "state_name":False,
                                         "county_name":False,
-                                        "dem_votes_preds":True,
-                                        "gop_votes_preds":True,
-                                        "perc_margin_preds":True
+                                        "dem_votes":True,
+                                        "gop_votes":True,
+                                        "perc_margin":True
                                     }
                                     )
                 fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
@@ -2020,25 +2007,25 @@ def update_pred_map2028(radio_select, state_select):
             elif 'District of Columbia' in state_select:
                 fig = px.choropleth_mapbox(new_df, geojson=counties, 
                                     locations='fips_code_lz', 
-                                    color='per_gop_preds',
-                                    range_color=(preds['per_gop_preds'].min(), preds['per_gop_preds'].max()),  
+                                    color='per_gop',
+                                    range_color=(preds2028['per_gop'].min(), preds2028['per_gop'].max()),  
                                     color_continuous_scale="balance",
                                     mapbox_style="carto-positron",
                                     hover_name="county_name", 
                                     zoom=8, 
                                     center = {"lat": avg_lon, "lon": avg_lat},
                                     opacity=0.5,
-                                    labels={'dem_votes_preds':'Democratic Votes',
-                                            'gop_votes_preds':'Republican Votes',
-                                            'perc_margin_preds':'% Margin'},
+                                    labels={'dem_votes':'Democratic Votes',
+                                            'gop_votes':'Republican Votes',
+                                            'perc_margin':'% Margin'},
                                     hover_data = {
                                         "fips_code_lz":False,
-                                        "per_gop_preds":False,
+                                        "per_gop":False,
                                         "state_name":False,
                                         "county_name":False,
-                                        "dem_votes_preds":True,
-                                        "gop_votes_preds":True,
-                                        "perc_margin_preds":True
+                                        "dem_votes":True,
+                                        "gop_votes":True,
+                                        "perc_margin":True
                                     }
                                     )
                 fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
@@ -2049,25 +2036,25 @@ def update_pred_map2028(radio_select, state_select):
                 fig = px.choropleth_mapbox(new_df, 
                                     geojson=counties, 
                                     locations='fips_code_lz', 
-                                    color='per_gop_preds',
-                                    range_color=(preds['per_gop_preds'].min(), preds['per_gop_preds'].max()),  
+                                    color='per_gop',
+                                    range_color=(preds2028['per_gop'].min(), preds2028['per_gop'].max()),  
                                     color_continuous_scale="balance",
                                     mapbox_style="carto-positron",
                                     hover_name="county_name", 
                                     zoom=2, 
                                     center = {"lat": avg_lon, "lon": avg_lat},
                                     opacity=0.5,
-                                    labels={'dem_votes_preds':'Democratic Votes',
-                                            'gop_votes_preds':'Republican Votes',
-                                            'perc_margin_preds':'% Margin'},
+                                    labels={'dem_votes':'Democratic Votes',
+                                            'gop_votes':'Republican Votes',
+                                            'perc_margin':'% Margin'},
                                     hover_data = {
                                         "fips_code_lz":False,
-                                        "per_gop_preds":False,
+                                        "per_gop":False,
                                         "state_name":False,
                                         "county_name":False,
-                                        "dem_votes_preds":True,
-                                        "gop_votes_preds":True,
-                                        "perc_margin_preds":True
+                                        "dem_votes":True,
+                                        "gop_votes":True,
+                                        "perc_margin":True
                                     }
                                     )
                 fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
@@ -2081,25 +2068,25 @@ def update_pred_map2028(radio_select, state_select):
 
                 fig = px.choropleth_mapbox(new_df, geojson=counties, 
                                     locations='fips_code_lz', 
-                                    color='per_gop_preds',
-                                    range_color=(preds['per_gop_preds'].min(), preds['per_gop_preds'].max()),  
+                                    color='per_gop',
+                                    range_color=(preds2028['per_gop'].min(), preds2028['per_gop'].max()),  
                                     color_continuous_scale="balance",
                                     mapbox_style="carto-positron",
                                     hover_name="county_name", 
                                     zoom=4, 
                                     center = {"lat": avg_lon, "lon": avg_lat},
                                     opacity=0.5,
-                                    labels={'dem_votes_preds':'Democratic Votes',
-                                            'gop_votes_preds':'Republican Votes',
-                                            'perc_margin_preds':'% Margin'},
+                                    labels={'dem_votes':'Democratic Votes',
+                                            'gop_votes':'Republican Votes',
+                                            'perc_margin':'% Margin'},
                                     hover_data = {
                                         "fips_code_lz":False,
-                                        "per_gop_preds":False,
+                                        "per_gop":False,
                                         "state_name":False,
                                         "county_name":False,
-                                        "dem_votes_preds":True,
-                                        "gop_votes_preds":True,
-                                        "perc_margin_preds":True
+                                        "dem_votes":True,
+                                        "gop_votes":True,
+                                        "perc_margin":True
                                     }
                                     )
                 fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
@@ -2109,25 +2096,25 @@ def update_pred_map2028(radio_select, state_select):
             else:
                 fig = px.choropleth_mapbox(new_df, geojson=counties, 
                                     locations='fips_code_lz', 
-                                    color='per_gop_preds',
-                                    range_color=(preds['per_gop_preds'].min(), preds['per_gop_preds'].max()),  
+                                    color='per_gop',
+                                    range_color=(preds2028['per_gop'].min(), preds2028['per_gop'].max()),  
                                     color_continuous_scale="balance",
                                     mapbox_style="carto-positron",
                                     hover_name="county_name", 
                                     zoom=5, 
                                     center = {"lat": avg_lon, "lon": avg_lat},
                                     opacity=0.5,
-                                    labels={'dem_votes_preds':'Democratic Votes',
-                                            'gop_votes_preds':'Republican Votes',
-                                            'perc_margin_preds':'% Margin'},
+                                    labels={'dem_votes':'Democratic Votes',
+                                            'gop_votes':'Republican Votes',
+                                            'perc_margin':'% Margin'},
                                     hover_data = {
                                         "fips_code_lz":False,
-                                        "per_gop_preds":False,
+                                        "per_gop":False,
                                         "state_name":False,
                                         "county_name":False,
-                                        "dem_votes_preds":True,
-                                        "gop_votes_preds":True,
-                                        "perc_margin_preds":True
+                                        "dem_votes":True,
+                                        "gop_votes":True,
+                                        "perc_margin":True
                                     }
                                     )
                 fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
@@ -2137,29 +2124,30 @@ def update_pred_map2028(radio_select, state_select):
 
         else:
 
-            fig = px.scatter_mapbox(preds, lat="Lon", lon="Lat", 
+            fig = px.scatter_mapbox(preds2028, lat="Lon", lon="Lat", 
                                         hover_name="county_name", 
                                         color_continuous_scale="balance",
-                                        color="per_gop_preds",
-                                        range_color=(preds['per_gop_preds'].min(), preds['per_gop_preds'].max()),  
+                                        color="per_gop",
+                                        range_color=(preds2028['per_gop'].min(), preds2028['per_gop'].max()),  
                                         hover_data = {
-                                                "dem_gop_preds_total":False,
+                                                "gop_dem_total":False,
                                                 "Lon":False,
                                                 "Lat":False,
                                                 "fips_code_lz":False,
-                                                "per_gop_preds":False,
+                                                "per_gop":False,
                                                 "state_name":True,
                                                 "county_name":False,
-                                                "dem_votes_preds_formatted":True,
-                                                "gop_votes_preds_formatted":True,
-                                                "perc_margin_preds_formatted":True
+                                                "dem_votes_formatted":True,
+                                                "gop_votes_formatted":True,
+                                                "perc_margin_formatted":True
                                         },
                                         labels={'state_name':'State',
-                                                'dem_votes_preds_formatted':'Democratic Votes',
-                                                'gop_votes_preds_formatted':'Republican Votes',
-                                                'perc_margin_preds_formatted':'% Margin'},
-                                        size = "dem_gop_preds_total",
-                                        zoom=3,center = {"lat": 37.0902, "lon": -95.7129})
+                                                'dem_votes_formatted':'Democratic Votes',
+                                                'gop_votes_formatted':'Republican Votes',
+                                                'perc_margin_formatted':'% Margin'},
+                                        size = "gop_dem_total",
+                                        zoom=3,
+                                        center = {"lat": 37.0902, "lon": -95.7129})
             fig.update_layout(mapbox_style="carto-positron",
                                         margin={"r":0,"t":0,"l":0,"b":0},
                                         height=400)
@@ -2178,37 +2166,36 @@ def update_pred_map2028(radio_select, state_select):
 def update_card_county_preds2028(state_select,radio_select,click_county_select):
 
         if click_county_select:
-            new_df = preds[preds['state_name']==state_select]
+            new_df = preds2028[preds2028['state_name']==state_select]
             county_id = click_county_select['points'][0]['customdata'][3]
             new_df2 = new_df[new_df['county_name']==county_id]
 
             counties = new_df["county_name"].values
             if county_id not in counties:
-                new_df = preds[preds["state_name"] == state_select]
+                new_df = preds2028[preds2028["state_name"] == state_select]
                 county_id = new_df["county_name"].iloc[0]
                 new_df2 = new_df[new_df["county_name"] == county_id]
         else:
-            new_df = preds[preds['state_name']==state_select]
+            new_df = preds2028[preds2028['state_name']==state_select]
             county_id = new_df['county_name'].iloc[0]
             new_df2 = new_df[new_df['county_name']==county_id]
 
 
-        new_df2['per_dem_preds'] = new_df2['per_dem_preds'].astype(float).map("{:.1%}".format)
-        new_df2['per_gop_preds'] = new_df2['per_gop_preds'].astype(float).map("{:.1%}".format)
-        #new_df2['EV'] = np.where(preds['win']=="Republican", new_df2['Rep_EV'], preds['Dem_EV'])
-        winner = new_df2['win'].values[0]
-        e_votes = 287
+        new_df2['per_dem'] = new_df2['per_dem'].astype(float).map("{:.1%}".format)
+        new_df2['per_gop'] = new_df2['per_gop'].astype(float).map("{:.1%}".format)
+        winner = str(np.where(new_df['dem_votes'].sum()>new_df['gop_votes'].sum(),"Democratic","Republican"))    
+        e_votes = 302
 
-        country_summary = preds.groupby('state_name').first().reset_index()
-        country_gop = country_summary[country_summary['win']=="Republican"]
-        country_dem = country_summary[country_summary['win']=="Democratic"]
+        #country_summary = preds2028.groupby('state_name').first().reset_index()
+        #country_gop = country_summary[country_summary['win']=="Republican"]
+        #country_dem = country_summary[country_summary['win']=="Democratic"]
 
         state_name = new_df2['state_name'].values[0]
 
-        state_summary_predict = preds.groupby('state_name')[['dem_votes_preds', 'gop_votes_preds']].sum().reset_index()
-        predict_winner = state_summary_predict[['dem_votes_preds', 'gop_votes_preds']].sum().to_frame().T
-        dem_pred_total = int(predict_winner['dem_votes_preds'].values[0])
-        gop_pred_total = int(predict_winner['gop_votes_preds'].values[0])
+        state_summary_predict = preds2028.groupby('state_name')[['dem_votes', 'gop_votes']].sum().reset_index()
+        predict_winner = state_summary_predict[['dem_votes', 'gop_votes']].sum().to_frame().T
+        dem_pred_total = int(predict_winner['dem_votes'].values[0])
+        gop_pred_total = int(predict_winner['gop_votes'].values[0])
         pred_country_winner = str(np.where(dem_pred_total > gop_pred_total, "Democratic", "Republican"))
 
         if 'State View' in radio_select:
@@ -2231,7 +2218,7 @@ def update_card_county_preds2028(state_select,radio_select,click_county_select):
             card2 = dbc.Card([
                 dbc.CardBody([
                     html.P(f'Total {state_select} DEM Votes'),
-                    html.H6(f"{new_df['dem_votes_preds'].sum():,.0f}", className="card-title"),
+                    html.H6(f"{new_df['dem_votes'].sum():,.0f}", className="card-title"),
                 ])
             ],
             style={'display': 'inline-block',
@@ -2246,7 +2233,7 @@ def update_card_county_preds2028(state_select,radio_select,click_county_select):
             card3 = dbc.Card([
                 dbc.CardBody([
                     html.P(f'Total {state_select} GOP Votes'),
-                    html.H6(f"{new_df['gop_votes_preds'].sum():,.0f}", className="card-title"),
+                    html.H6(f"{new_df['gop_votes'].sum():,.0f}", className="card-title"),
 
                 ])
             ],
@@ -2262,7 +2249,7 @@ def update_card_county_preds2028(state_select,radio_select,click_county_select):
             card4 = dbc.Card([
                 dbc.CardBody([
                     html.P(f'% DEM Vote in {county_id}'),
-                    html.H6(new_df2['per_dem_preds'], className="card-title"),
+                    html.H6(new_df2['per_dem'], className="card-title"),
                 ])
             ],
             style={'display': 'inline-block',
@@ -2277,7 +2264,7 @@ def update_card_county_preds2028(state_select,radio_select,click_county_select):
             card5 = dbc.Card([
                 dbc.CardBody([
                     html.P(f'% GOP Vote in {county_id}'),
-                    html.H6(new_df2['per_gop_preds'], className="card-title"),
+                    html.H6(new_df2['per_gop'], className="card-title"),
                 ])
             ],
             style={'display': 'inline-block',
@@ -2296,8 +2283,7 @@ def update_card_county_preds2028(state_select,radio_select,click_county_select):
         else:
             card6 = dbc.Card([
                 dbc.CardBody([
-                    html.H5(f'The {pred_country_winner} candidate wins the election with {e_votes} electoral votes.', className="card-title"),
-                    html.H6(f'*Alaska vote totals excluded from popular vote.', className="card-title")
+                    html.H5(f'The {pred_country_winner} candidate is predicted to win the 2028 election with {e_votes} electoral votes.', className="card-title"),
 
                 ])
             ],
@@ -2313,7 +2299,7 @@ def update_card_county_preds2028(state_select,radio_select,click_county_select):
             card7 = dbc.Card([
                 dbc.CardBody([
                     html.P('DEM Electoral College Votes'),
-                    html.H6('287', className="card-title"),
+                    html.H6(236, className="card-title"),
                 ])
             ],
             style={'display': 'inline-block',
@@ -2328,7 +2314,7 @@ def update_card_county_preds2028(state_select,radio_select,click_county_select):
             card8 = dbc.Card([
                 dbc.CardBody([
                     html.P('GOP Electoral College Votes'),
-                    html.H6(251, className="card-title"),
+                    html.H6(302, className="card-title"),
 
                 ])
             ],
@@ -2345,7 +2331,7 @@ def update_card_county_preds2028(state_select,radio_select,click_county_select):
             card9 = dbc.Card([
                 dbc.CardBody([
                     html.P('DEM Popular Vote'),
-                    html.H6(f"{preds['dem_votes_preds'].sum():,.0f}", className="card-title"),
+                    html.H6(f"{preds2028['dem_votes'].sum():,.0f}", className="card-title"),
                 ])
             ],
             style={'display': 'inline-block',
@@ -2360,7 +2346,7 @@ def update_card_county_preds2028(state_select,radio_select,click_county_select):
             card10 = dbc.Card([
                 dbc.CardBody([
                     html.P('GOP Popular Vote'),
-                    html.H6(f"{preds['gop_votes_preds'].sum():,.0f}", className="card-title"),
+                    html.H6(f"{preds2028['gop_votes'].sum():,.0f}", className="card-title"),
 
                 ])
             ],
@@ -2458,6 +2444,6 @@ def toggle_modal6(n1, n2, is_open):
 # def display_click_data(map_click):
 #     return json.dumps(map_click, indent=2)
 
-app.run_server(host='0.0.0.0',port='8056')
+app.run_server(host='0.0.0.0',port='8057')
 # if __name__=='__main__':
 # 	app.run_server()
