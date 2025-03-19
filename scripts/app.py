@@ -666,9 +666,6 @@ app.layout = html.Div([
                 html.Div([
                     dbc.Row(id="preds_card_row_header"),
                     dbc.Row(id="preds_card_row_totals")
-                    # dbc.Row(id='card_row_county'),
-                    # dbc.Row(id='card_row_percs'),
-                    # dbc.Row(id='card_for_winner')
                 ],style={'width': '100%','display': 'inline-block'}),
                 #Dropdown and Map
                 html.Div(
@@ -680,10 +677,11 @@ app.layout = html.Div([
                         ),
                 ],style={'width': '100%','display': 'inline-block','text-align': 'left','vertical-align':'top'}),
                 html.Div([
-                    #dcc.Loading(
                         dcc.Graph(id='predictions_map2024')
-                    #)
-                ],style={'width': '100%','display': 'inline-block','text-align': 'left','vertical-align':'top'})
+                ],style={'width': '50%','display': 'inline-block','text-align': 'left','vertical-align':'top'}),
+                html.Div([
+                        dcc.Graph(id='actuals_v_preds2024')
+                ],style={'width': '50%','display': 'inline-block','text-align': 'left','vertical-align':'top'})
         
            
                 ]
@@ -732,9 +730,6 @@ app.layout = html.Div([
                 html.Div([
                     dbc.Row(id="preds_card_row_header_2028"),
                     dbc.Row(id="preds_card_row_totals_2028")
-                    # dbc.Row(id='card_row_county'),
-                    # dbc.Row(id='card_row_percs'),
-                    # dbc.Row(id='card_for_winner')
                 ],style={'width': '100%','display': 'inline-block'}),
                 #Dropdown and Map
                 html.Div(
@@ -746,10 +741,12 @@ app.layout = html.Div([
                         ),
                 ],style={'width': '100%','display': 'inline-block','text-align': 'left','vertical-align':'top'}),
                 html.Div([
-                    #dcc.Loading(
                         dcc.Graph(id='predictions_map2028')
-                    #)
-                ],style={'width': '100%','display': 'inline-block','text-align': 'left','vertical-align':'top'})
+                ],style={'width': '50%','display': 'inline-block','text-align': 'left','vertical-align':'top'}),
+                html.Div([
+                        dcc.Graph(id='comparison_2024_v_2028')
+                ],style={'width': '50%','display': 'inline-block','text-align': 'left','vertical-align':'top'})
+        
         
            
                 ]
@@ -1730,11 +1727,18 @@ def update_pred_map(radio_select, state_select):
                                                 'gop_votes_preds_formatted':'Republican Votes',
                                                 'perc_margin_preds_formatted':'% Margin'},
                                         size = "dem_gop_preds_total",
-                                        zoom=3,center = {"lat": 37.0902, "lon": -95.7129})
-            fig.update_layout(mapbox_style="carto-positron",
-                                        margin={"r":0,"t":0,"l":0,"b":0},
-                                        height=400)
-            fig.update_coloraxes(colorbar=dict(title='D - R Scale',showticklabels=False))
+                                        zoom=2,center = {"lat": 37.0902, "lon": -95.7129})
+            fig.update_layout(
+                mapbox_style="carto-positron",
+                margin={"r":0,"t":0,"l":0,"b":0},
+                height=400
+            )
+            fig.update_coloraxes(
+                colorbar=dict(
+                    title='D - R Scale',
+                    showticklabels=False
+                )
+            )
 
             return (fig), ({'display': 'none'})
 
@@ -1766,13 +1770,12 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
 
         new_df2['per_dem_preds'] = new_df2['per_dem_preds'].astype(float).map("{:.1%}".format)
         new_df2['per_gop_preds'] = new_df2['per_gop_preds'].astype(float).map("{:.1%}".format)
-        #new_df2['EV'] = np.where(preds['win']=="Republican", new_df2['Rep_EV'], preds['Dem_EV'])
         winner = new_df2['win'].values[0]
         e_votes = 287
 
-        country_summary = preds.groupby('state_name').first().reset_index()
-        country_gop = country_summary[country_summary['win']=="Republican"]
-        country_dem = country_summary[country_summary['win']=="Democratic"]
+        # country_summary = preds.groupby('state_name').first().reset_index()
+        # country_gop = country_summary[country_summary['win']=="Republican"]
+        # country_dem = country_summary[country_summary['win']=="Democratic"]
 
         state_name = new_df2['state_name'].values[0]
 
@@ -1947,6 +1950,160 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
 
            
             return (card6), (card7, card8, card9, card10)
+
+
+
+#Configure Reactivity for Actual vs. Predicted Margin
+@app.callback(
+    Output('actuals_v_preds2024','figure'),
+    Input('radio3','value'),
+    Input('dropdown5','value'))
+
+def actual_v_pred_margin(radio_select, state_select):
+
+    preds['noabs_margin_preds'] = preds['dem_votes_preds'] - preds['gop_votes_preds']
+    preds['noabs_margin_actuals'] = preds['dem_votes_actuals'] - preds['gop_votes_actuals']
+    preds['win_updated'] = np.where(preds['dem_votes_actuals']>preds['gop_votes_actuals'], 'DEM','GOP')
+    preds['hover_name'] = preds['county_name'] + ', ' + preds['state_name']
+
+    if 'Country View' in radio_select:
+        fig = px.scatter(
+            preds,
+            x = 'noabs_margin_preds', y = 'noabs_margin_actuals',
+            color = 'win_updated',
+            color_discrete_map={
+                'DEM': 'blue',
+                'GOP': 'red'
+            },
+            hover_name="hover_name", 
+            hover_data = {
+                "state_name":True
+            },
+            labels={
+                'state_name':'State',
+                'win_updated':'Winner',
+                'noabs_margin_preds':'Predicted Margin',
+                'noabs_margin_actuals':'Actual Margin',
+            }
+        )
+        fig.add_shape(
+            type='line',
+            x0=0, x1=0,
+            y0=preds['noabs_margin_actuals'].min(), y1=preds['noabs_margin_actuals'].max(),
+            line=dict(color='gray', width=1, dash='dash')
+        )
+
+        fig.add_shape(
+            type='line',
+            x0=preds['noabs_margin_preds'].min(), x1=preds['noabs_margin_preds'].max(),
+            y0=0, y1=0,
+            line=dict(color='gray', width=1, dash='dash')
+        )
+
+        fig.update_layout(
+            xaxis_title="Predicted Margin",
+            yaxis_title="Actual Margin",
+            legend=dict(
+                x=1,
+                y=0,
+                xanchor='right',
+                yanchor='bottom',
+                bgcolor='rgba(0,0,0,0)'  
+            ),
+            title=dict(
+                text="Actual Margin vs. Predicted Margin", 
+                x=0.5, 
+                xanchor='center'
+            )     
+        )
+
+        return fig
+
+    else:
+
+        filtered_df = preds[preds['state_name']==state_select]
+
+        # Compute dynamic range with buffer
+        x_min = filtered_df['noabs_margin_preds'].min()
+        x_max = filtered_df['noabs_margin_preds'].max()
+        y_min = filtered_df['noabs_margin_actuals'].min()
+        y_max = filtered_df['noabs_margin_actuals'].max()
+
+        # Add a buffer (e.g., 10% of the range, or a fixed minimum buffer)
+        x_range = x_max - x_min
+        y_range = y_max - y_min
+
+        buffer_x = max(0.1 * x_range, 5)  # ensure a minimum padding of 5 if data is clustered
+        buffer_y = max(0.1 * y_range, 5)
+
+        # Force inclusion of zero in range
+        x_lower = min(x_min - buffer_x, 0)
+        x_upper = max(x_max + buffer_x, 0)
+        y_lower = min(y_min - buffer_y, 0)
+        y_upper = max(y_max + buffer_y, 0)
+
+        fig = px.scatter(
+            filtered_df,
+            x = 'noabs_margin_preds', y = 'noabs_margin_actuals',
+            color = 'win_updated',
+            color_discrete_map={
+                'DEM': 'blue',
+                'GOP': 'red'
+            },
+            hover_name="county_name", 
+            hover_data = {
+                "state_name":True
+            },
+            labels={
+                'state_name':'State',
+                'win_updated':'Winner',
+                'noabs_margin_preds':'Predicted Margin',
+                'noabs_margin_actuals':'Actual Margin'
+            }
+          
+        )
+
+        fig.update_layout(
+            legend=dict(
+                x=1,
+                y=0,
+                xanchor='right',
+                yanchor='bottom',
+                bgcolor='rgba(0,0,0,0)' 
+            ),
+            xaxis=dict(
+                title='Predicted Margin', 
+                range=[x_lower, x_upper]
+            ),
+            yaxis=dict(
+                title='Actual Margin', 
+                range=[y_lower, y_upper]
+            ),
+            title=dict(
+                text="Actual Margin vs. Predicted Margin", 
+                x=0.5, 
+                xanchor='center'
+            )            
+        )
+        fig.add_shape(
+            type='line',
+                x0=0, x1=0,
+                y0=y_lower, y1=y_upper,
+                line=dict(color='gray', width=2, dash='dash'),
+                xref='x', yref='y'
+        )
+
+        fig.add_shape(
+            type='line',
+            x0=x_lower, x1=x_upper,
+            y0=0, y1=0,
+            line=dict(color='gray', width=2, dash='dash'),
+            xref='x', yref='y'
+        )
+
+        return fig
+        
+
 
 #----- 2028 Prediction Tab
 
