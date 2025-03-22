@@ -25,7 +25,7 @@ elections['fips_code_lz'] = np.where(
     elections['fips_code_lz'].astype(str)
 )
 
-#2 and #3.) Cluster Data
+#Cluster Data
 url2 = 'https://raw.githubusercontent.com/statzenthusiast921/US_Elections_Project/refs/heads/main/Data/THECluster2012.csv'
 url3 = 'https://raw.githubusercontent.com/statzenthusiast921/US_Elections_Project/refs/heads/main/Data/THECluster2016.csv'
 url4 = 'https://raw.githubusercontent.com/statzenthusiast921/US_Elections_Project/refs/heads/main/Data/THECluster2020.csv'
@@ -365,8 +365,8 @@ app.layout = html.Div([
                    ],style={'text-decoration': 'underline'}),
                    
                    html.Div([
-                       html.P(["Data from each US presidential election from 1960 to 2024 was included in this analysis.  Most of the data was gathered from this ", html.A("Github repository",href="https://github.com/cilekagaci/us-presidential-county-1960-2016")," covering elections from 1960 to 2016.  Data for the 2020 election was obtained from this ",html.A(" repository.",href="https://github.com/tonmcg/US_County_Level_Election_Results_08-20")]),
-                       html.P(["To inform the clustering algorithm, county-level socioeconomic data was pulled from this link" ,html.A(" here ",href="https://www.ahrq.gov/sdoh/data-analytics/sdoh-data.html"), "from the Agency for Healthcare Research and Quality."])
+                       html.P(["Data from each US presidential election from 1960 to 2024 was included in this analysis.  Most of the data was gathered from this ", html.A("Github repository",href="https://github.com/cilekagaci/us-presidential-county-1960-2016")," covering elections from 1960 to 2016.  Data for the 2020 election was obtained from this ",html.A(" repository",href="https://github.com/tonmcg/US_County_Level_Election_Results_08-20")," and data for the 2024 election was obtained from this ",html.A(" repository",href="https://github.com/tonmcg/US_County_Level_Election_Results_08-24"),'.']),
+                       html.P(["To inform the clustering algorithm, county-level socioeconomic data was pulled from this link " ,html.A("here",href="https://www.ahrq.gov/sdoh/data-analytics/sdoh-data.html"), " from the Agency for Healthcare Research and Quality."])
                    ]),
                    html.Div([
                        html.P(dcc.Markdown('''**What are the limitations of this data?**''')),
@@ -374,10 +374,9 @@ app.layout = html.Div([
                    html.Div(
                        children=[
                         html.P("Data was pulled from multiple sources and combined.  The data sources may have had different standards and/or methods of collecting and maintaining information."),
-                        html.P(["Further, data for Alaska was available, but was not presented with the standard FIPS county code identifier, therefore it was not conducive for regular plotting procedures. Thus, vote estimates from this ", html.A('link',href="https://github.com/tonmcg/US_County_Level_Election_Results_08-20/issues/2"), " were used to take advantage of their consistency with the FIPS county code format.  This was used as the authorative source of data for Alaska, which only had data from 1960 through 2016."])
+                        html.P(["Further, data for Alaska was available, but was not presented with the standard FIPS county code identifier, therefore it was not conducive for regular plotting procedures. Thus, vote estimates from this ", html.A('link',href="https://github.com/tonmcg/US_County_Level_Election_Results_08-20/issues/2"), " were used to take advantage of their consistency with the FIPS county code format.  This was used as the authorative source of data for Alaska, which only had data from 1960 through 2016.  Thus, Alaska predictions were not included in the original 2020 predictions but then included only statewide in the 2024 predictions."])
                         ]
                     )
-
 
                ]),
 #Tab #2 --> All Data Tab
@@ -457,9 +456,7 @@ app.layout = html.Div([
                     )
                 ],style={'width': '15%','display': 'inline-block'}),
                 html.Div([
-                    #dcc.Loading(
                         dcc.Graph(id='us_map')
-                    #)
                 ],style={'width': '100%','display': 'inline-block','text-align': 'left'}),
                 html.Div([
                     dcc.Graph(id='ev_graph')
@@ -530,9 +527,7 @@ app.layout = html.Div([
                 ]),
                 #State Map with County Choropleth
                 html.Div([
-                    #dcc.Loading(
-                        dcc.Graph(id='state_map')
-                    #)
+                    dcc.Graph(id='state_map')
                 ],style={'width': '50%','display': 'inline-block','text-align': 'center'}),
                 #Party Line % Graph
                 html.Div([
@@ -552,7 +547,7 @@ app.layout = html.Div([
                         dbc.ModalBody(
                             children=[
                                 html.P("To the right of this button, you will find the controls for this page.  Select a state from the first dropdown box, and then select a county from the second dropdown box.  These selections should populate the map below showing other counties that were contained in the same cluster."),
-                                html.P("Use the radio button to change between clusters calculated for the 2012 election vs. the 2016 election.")
+                                html.P("Use the dropdown box on the right to change between clusters calculated for the 2012, 2016, and 2020 elections.")
                             ]
                         ),
                         dbc.ModalFooter(
@@ -599,9 +594,7 @@ app.layout = html.Div([
 
                 #Cluster Map
                 html.Div([
-                    #dcc.Loading(
                         dcc.Graph(id='cluster_map')
-                    #)
                 ],style={'width': '100%','display': 'inline-block','text-align': 'left','vertical-align':'top'}),
         
                 #Modal Instructions #4
@@ -635,7 +628,11 @@ app.layout = html.Div([
                                 html.P("To the right of this button, you will find the controls for this page."),
                                 html.P("Click on the 'Country View' button to see the 2024 predictions at the national level."),
                                 html.P("Click on the 'State View' button to see the 2024 predictions at a specific state level.  \
-                                        Click the counties on the map in this view to see the predictions for a specific county.")
+                                        Click the counties on the map in this view to see the predictions for a specific county."),
+                                html.P("Use the scatterplot on the right to determine which counties beat their 2024 predictions.   \
+                                        Any county appearing in either the bottom left or top right quadrants indicate actual results that matched the predictions. \
+                                        Any county appearing in the top left quadrant indicates an unexpected Democratic win, while any county \
+                                        appearing in the bottom right quadrant indicates an unexpected Republican win.") 
                             ]
                         ),
                         dbc.ModalFooter(
@@ -697,9 +694,13 @@ app.layout = html.Div([
                         dbc.ModalBody(
                             children=[
                                 html.P("To the right of this button, you will find the controls for this page."),
-                                html.P("Click on the 'Country View' button to see the 2024 predictions at the national level."),
-                                html.P("Click on the 'State View' button to see the 2024 predictions at a specific state level.  \
-                                        Click the counties on the map in this view to see the predictions for a specific county.")
+                                html.P("Click on the 'Country View' button to see the 2028 predictions at the national level."),
+                                html.P("Click on the 'State View' button to see the 2028 predictions at a specific state level.  \
+                                        Click the counties on the map in this view to see the predictions for a specific county."),
+                                html.P("Use the scatterplot on the right to determine which counties are predicted to beat their 2024 results.   \
+                                        Any county appearing in either the bottom left or top right quadrants indicate the same outcome as the last election. \
+                                        Any county appearing in the top left quadrant indicates an unexpected Republican win, while any county \
+                                        appearing in the bottom right quadrant indicates an unexpected Democratic win.") 
                             ]
                         ),
                         dbc.ModalFooter(
@@ -736,8 +737,8 @@ app.layout = html.Div([
                     children=[
                         dcc.Dropdown(
                             id='dropdown6',
-                            options=[{'label': i, 'value': i} for i in state_choices],
-                            value=state_choices[0]
+                            options=[{'label': i, 'value': i} for i in state_choices2],
+                            value=state_choices2[0]
                         ),
                 ],style={'width': '100%','display': 'inline-block','text-align': 'left','vertical-align':'top'}),
                 html.Div([
@@ -792,7 +793,6 @@ def render_content(tab):
 #Configure Reactivity for Country Map on Tab 3
 @app.callback(
     Output('us_map','figure'),
-    #Output('loading','children'),
     Input('slider1','value'),
     Input('radio1','value'))
 
@@ -952,7 +952,6 @@ def update_state_county_map(state_select,year_select):
                                         "perc_margin":True
                                     })
             fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0},coloraxis_showscale=False)
-            #fig.update_geos(fitbounds="locations")    
             return fig
 
         elif 'Alaska' in state_select:
@@ -975,7 +974,6 @@ def update_state_county_map(state_select,year_select):
                                     }
                                     )
             fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0},coloraxis_showscale=False)
-            #fig.update_geos(fitbounds="locations")    
 
             return fig
 
@@ -998,7 +996,6 @@ def update_state_county_map(state_select,year_select):
                                         "perc_margin":True
                                     })
             fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0},coloraxis_showscale=False)
-            #fig.update_geos(fitbounds="locations")    
 
             return fig
         else:
@@ -1412,9 +1409,6 @@ def cluster_stats_row(dd4,dd_state,dd_county):
     return (card1, card2, card3, card4, card5)  
 
 
-
-
-
 #Configure reactivity for detailed cluster stats modal
 @app.callback(
     Output('cluster_modal_text','children'),
@@ -1545,8 +1539,6 @@ def update_pred_map(radio_select, state_select):
 
         new_df['dem_votes_preds'] = new_df['dem_votes_preds'].astype(float).map("{:,.0f}".format)
         new_df['gop_votes_preds'] = new_df['gop_votes_preds'].astype(float).map("{:,.0f}".format)
-
-
 
         if 'State View' in radio_select:
 
@@ -1731,7 +1723,6 @@ def update_pred_map(radio_select, state_select):
             fig.update_layout(
                 mapbox_style="carto-positron",
                 margin={"r":0,"t":0,"l":0,"b":0},
-                height=400
             )
             fig.update_coloraxes(
                 colorbar=dict(
@@ -1773,10 +1764,6 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
         winner = new_df2['win'].values[0]
         e_votes = 287
 
-        # country_summary = preds.groupby('state_name').first().reset_index()
-        # country_gop = country_summary[country_summary['win']=="Republican"]
-        # country_dem = country_summary[country_summary['win']=="Democratic"]
-
         state_name = new_df2['state_name'].values[0]
 
         state_summary_predict = preds.groupby('state_name')[['dem_votes_preds', 'gop_votes_preds']].sum().reset_index()
@@ -1789,7 +1776,7 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
 
             card1 = dbc.Card([
                 dbc.CardBody([
-                    html.H5(f'The {winner} candidate wins {state_name}.', className="card-title")
+                    html.H5(f'The {winner} candidate was predicted to win {state_name}.', className="card-title")
                 ])
             ],
             style={'display': 'inline-block',
@@ -1863,15 +1850,12 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
                 'fontSize':16},
             outline=True)
 
-
-    
-
             return (card1), (card2, card3, card4, card5)
         else:
             card6 = dbc.Card([
                 dbc.CardBody([
                     html.H5(f'The {pred_country_winner} candidate was predicted to win the 2024 election with {e_votes} electoral votes.', className="card-title"),
-                    html.H6(f'*Alaska vote totals excluded from popular vote.', className="card-title")
+                    html.H6(f'*Alaska excluded from popular vote totals and State View selection.', className="card-title")
 
                 ])
             ],
@@ -1946,14 +1930,10 @@ def update_card_county_preds(state_select,radio_select,click_county_select):
                 'fontWeight': 'bold',
                 'fontSize':16},
             outline=True)
-
-
            
             return (card6), (card7, card8, card9, card10)
 
-
-
-#Configure Reactivity for Actual vs. Predicted Margin
+#Configure Reactivity for 2024 Actual vs. Predicted Margin
 @app.callback(
     Output('actuals_v_preds2024','figure'),
     Input('radio3','value'),
@@ -1965,6 +1945,7 @@ def actual_v_pred_margin(radio_select, state_select):
     preds['noabs_margin_actuals'] = preds['dem_votes_actuals'] - preds['gop_votes_actuals']
     preds['win_updated'] = np.where(preds['dem_votes_actuals']>preds['gop_votes_actuals'], 'DEM','GOP')
     preds['hover_name'] = preds['county_name'] + ', ' + preds['state_name']
+    
 
     if 'Country View' in radio_select:
         fig = px.scatter(
@@ -1976,12 +1957,16 @@ def actual_v_pred_margin(radio_select, state_select):
                 'GOP': 'red'
             },
             hover_name="hover_name", 
+            
             hover_data = {
-                "state_name":True
+                "state_name":True,
+                "noabs_margin_preds": ':,.0f',
+                "noabs_margin_actuals": ':,.0f'
+                
             },
             labels={
                 'state_name':'State',
-                'win_updated':'Winner',
+                'win_updated':'2024 Actual Winner',
                 'noabs_margin_preds':'Predicted Margin',
                 'noabs_margin_actuals':'Actual Margin',
             }
@@ -2023,20 +2008,20 @@ def actual_v_pred_margin(radio_select, state_select):
 
         filtered_df = preds[preds['state_name']==state_select]
 
-        # Compute dynamic range with buffer
+        #Compute dynamic range with buffer
         x_min = filtered_df['noabs_margin_preds'].min()
         x_max = filtered_df['noabs_margin_preds'].max()
         y_min = filtered_df['noabs_margin_actuals'].min()
         y_max = filtered_df['noabs_margin_actuals'].max()
 
-        # Add a buffer (e.g., 10% of the range, or a fixed minimum buffer)
+        #Add a buffer
         x_range = x_max - x_min
         y_range = y_max - y_min
 
-        buffer_x = max(0.1 * x_range, 5)  # ensure a minimum padding of 5 if data is clustered
+        buffer_x = max(0.1 * x_range, 5) 
         buffer_y = max(0.1 * y_range, 5)
 
-        # Force inclusion of zero in range
+        #Force inclusion of zero in range
         x_lower = min(x_min - buffer_x, 0)
         x_upper = max(x_max + buffer_x, 0)
         y_lower = min(y_min - buffer_y, 0)
@@ -2052,11 +2037,13 @@ def actual_v_pred_margin(radio_select, state_select):
             },
             hover_name="county_name", 
             hover_data = {
-                "state_name":True
+                "state_name":True,
+                "noabs_margin_preds": ':,.0f',
+                "noabs_margin_actuals": ':,.0f'
             },
             labels={
                 'state_name':'State',
-                'win_updated':'Winner',
+                'win_updated':'2024 Actual Winner',
                 'noabs_margin_preds':'Predicted Margin',
                 'noabs_margin_actuals':'Actual Margin'
             }
@@ -2303,11 +2290,12 @@ def update_pred_map2028(radio_select, state_select):
                                                 'gop_votes_formatted':'Republican Votes',
                                                 'perc_margin_formatted':'% Margin'},
                                         size = "gop_dem_total",
-                                        zoom=3,
+                                        zoom=2,
                                         center = {"lat": 37.0902, "lon": -95.7129})
-            fig.update_layout(mapbox_style="carto-positron",
-                                        margin={"r":0,"t":0,"l":0,"b":0},
-                                        height=400)
+            fig.update_layout(
+                mapbox_style="carto-positron",
+                margin={"r":0,"t":0,"l":0,"b":0}
+            )
             fig.update_coloraxes(colorbar=dict(title='D - R Scale',showticklabels=False))
 
             return (fig), ({'display': 'none'})
@@ -2343,10 +2331,6 @@ def update_card_county_preds2028(state_select,radio_select,click_county_select):
         winner = str(np.where(new_df['dem_votes'].sum()>new_df['gop_votes'].sum(),"Democratic","Republican"))    
         e_votes = 302
 
-        #country_summary = preds2028.groupby('state_name').first().reset_index()
-        #country_gop = country_summary[country_summary['win']=="Republican"]
-        #country_dem = country_summary[country_summary['win']=="Democratic"]
-
         state_name = new_df2['state_name'].values[0]
 
         state_summary_predict = preds2028.groupby('state_name')[['dem_votes', 'gop_votes']].sum().reset_index()
@@ -2359,7 +2343,7 @@ def update_card_county_preds2028(state_select,radio_select,click_county_select):
 
             card1 = dbc.Card([
                 dbc.CardBody([
-                    html.H5(f'The {winner} candidate wins {state_name}.', className="card-title")
+                    html.H5(f'The {winner} candidate is predicted to win {state_name}.', className="card-title")
                 ])
             ],
             style={'display': 'inline-block',
@@ -2433,14 +2417,12 @@ def update_card_county_preds2028(state_select,radio_select,click_county_select):
                 'fontSize':16},
             outline=True)
 
-
-    
-
             return (card1), (card2, card3, card4, card5)
         else:
             card6 = dbc.Card([
                 dbc.CardBody([
                     html.H5(f'The {pred_country_winner} candidate is predicted to win the 2028 election with {e_votes} electoral votes.', className="card-title"),
+                    html.H6(f'*Alaska excluded from State View selection.', className="card-title")
 
                 ])
             ],
@@ -2484,7 +2466,6 @@ def update_card_county_preds2028(state_select,radio_select,click_county_select):
                 'fontSize':16},
             outline=True)
 
-
             card9 = dbc.Card([
                 dbc.CardBody([
                     html.P('DEM Popular Vote'),
@@ -2515,11 +2496,168 @@ def update_card_county_preds2028(state_select,radio_select,click_county_select):
                 'fontWeight': 'bold',
                 'fontSize':16},
             outline=True)
-
-
            
             return (card6), (card7, card8, card9, card10)
 
+#Configure Reactivity for 2024 Actuals vs. 2028 Predictions 
+@app.callback(
+    Output('comparison_2024_v_2028','figure'),
+    Input('radio4','value'),
+    Input('dropdown6','value'))
+
+def pred_next_election_vs_last_election_results(radio_select, state_select):
+
+    preds['noabs_margin_actuals'] = preds['dem_votes_actuals'] - preds['gop_votes_actuals']
+    preds['win_updated_actuals'] = np.where(preds['dem_votes_actuals']>preds['gop_votes_actuals'], 'DEM','GOP')
+    preds['hover_name'] = preds['county_name'] + ', ' + preds['state_name']
+    
+    preds2028['noabs_margin_preds'] = preds2028['dem_votes'] - preds2028['gop_votes']
+    preds2028['win_updated_preds'] = np.where(preds2028['dem_votes']>preds2028['gop_votes'], 'DEM','GOP')
+
+    results2024 = preds[['state_name','county_name','fips_code_lz','noabs_margin_actuals','win_updated_actuals']]
+    results2028 = preds2028[['state_name','county_name','fips_code_lz','noabs_margin_preds','win_updated_preds']]
+
+    compare_results = pd.merge(results2024, results2028, how = 'left', on = ['state_name','county_name','fips_code_lz'])
+    compare_results['hover_name'] = compare_results['county_name'] + ', ' + compare_results['state_name']
+
+
+    if 'Country View' in radio_select:
+        fig = px.scatter(
+                compare_results,
+                x = 'noabs_margin_preds', y = 'noabs_margin_actuals',
+                color = 'win_updated_preds',
+                color_discrete_map={
+                    'DEM': 'blue',
+                    'GOP': 'red'
+                },
+                hover_name="hover_name", 
+                hover_data = {
+                    "state_name":True,
+                    "noabs_margin_preds": ':,.0f',
+                    "noabs_margin_actuals": ':,.0f'
+                },
+                labels={
+                    'state_name':'State',
+                    'win_updated_preds':'2028 Predicted Winner',
+                    'noabs_margin_preds':'Predicted 2028 Margin',
+                    'noabs_margin_actuals':'Actual 2024 Margin',
+                }
+            )
+        fig.add_shape(
+            type='line',
+            x0=0, x1=0,
+            y0=preds['noabs_margin_actuals'].min(), y1=preds['noabs_margin_actuals'].max(),
+            line=dict(color='gray', width=1, dash='dash')
+            )
+
+        fig.add_shape(
+                type='line',
+                x0=preds['noabs_margin_preds'].min(), x1=preds['noabs_margin_preds'].max(),
+                y0=0, y1=0,
+                line=dict(color='gray', width=1, dash='dash')
+            )
+
+        fig.update_layout(
+            xaxis_title="Predicted 2028 Margin",
+            yaxis_title="Actual 2024 Margin",
+            legend=dict(
+                x=1,
+                y=0,
+                xanchor='right',
+                yanchor='bottom',
+                bgcolor='rgba(0,0,0,0)'  
+            ),
+            title=dict(
+                text="Actual 2024 Margin vs. Predicted 2028 Margin", 
+                x=0.5, 
+                xanchor='center'
+            )     
+        )
+
+        return fig
+    else:
+
+        filtered_df = compare_results[compare_results['state_name']==state_select]
+
+        #Compute dynamic range with buffer
+        x_min = filtered_df['noabs_margin_preds'].min()
+        x_max = filtered_df['noabs_margin_preds'].max()
+        y_min = filtered_df['noabs_margin_actuals'].min()
+        y_max = filtered_df['noabs_margin_actuals'].max()
+
+        #Add a buffer 
+        x_range = x_max - x_min
+        y_range = y_max - y_min
+
+        buffer_x = max(0.1 * x_range, 5) 
+        buffer_y = max(0.1 * y_range, 5)
+
+        #Force inclusion of zero in range
+        x_lower = min(x_min - buffer_x, 0)
+        x_upper = max(x_max + buffer_x, 0)
+        y_lower = min(y_min - buffer_y, 0)
+        y_upper = max(y_max + buffer_y, 0)
+
+
+        fig = px.scatter(
+                filtered_df,
+                x = 'noabs_margin_preds', y = 'noabs_margin_actuals',
+                color = 'win_updated_preds',
+                color_discrete_map={
+                    'DEM': 'blue',
+                    'GOP': 'red'
+                },
+                hover_name="hover_name", 
+                hover_data = {
+                    "state_name":True,
+                    "noabs_margin_preds": ':,.0f',
+                    "noabs_margin_actuals": ':,.0f'
+                },
+                labels={
+                    'state_name':'State',
+                    'win_updated_preds':'2028 Predicted Winner',
+                    'noabs_margin_preds':'Predicted 2028 Margin',
+                    'noabs_margin_actuals':'Actual 2024 Margin',
+                }
+            )
+        fig.update_layout(
+            legend=dict(
+                x=1,
+                y=0,
+                xanchor='right',
+                yanchor='bottom',
+                bgcolor='rgba(0,0,0,0)' 
+            ),
+            xaxis=dict(
+                title='Predicted 2028 Margin', 
+                range=[x_lower, x_upper]
+            ),
+            yaxis=dict(
+                title='Actual 2024 Margin', 
+                range=[y_lower, y_upper]
+            ),
+            title=dict(
+                text="Actual 2024 Margin vs. Predicted 2028 Margin", 
+                x=0.5, 
+                xanchor='center'
+            )            
+        )
+        fig.add_shape(
+            type='line',
+                x0=0, x1=0,
+                y0=y_lower, y1=y_upper,
+                line=dict(color='gray', width=2, dash='dash'),
+                xref='x', yref='y'
+        )
+
+        fig.add_shape(
+            type='line',
+            x0=x_lower, x1=x_upper,
+            y0=0, y1=0,
+            line=dict(color='gray', width=2, dash='dash'),
+            xref='x', yref='y'
+        )
+        return fig
 
 #Configure modal reactivity - open up
 @app.callback(
@@ -2596,11 +2734,7 @@ def toggle_modal6(n1, n2, is_open):
     if n1 or n2:
         return not is_open
     return is_open
-# @app.callback(Output('click-data', 'children'),
-#     [Input('state_map', 'clickData')])
-# def display_click_data(map_click):
-#     return json.dumps(map_click, indent=2)
 
-app.run_server(host='0.0.0.0',port='8057')
-# if __name__=='__main__':
-# 	app.run_server()
+#app.run_server(host='0.0.0.0',port='8059')
+if __name__=='__main__':
+    app.run_server()
