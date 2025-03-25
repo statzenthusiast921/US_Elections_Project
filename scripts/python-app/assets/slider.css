@@ -1,0 +1,6 @@
+/* CSS to rotate the slider marks */
+.rc-slider-mark-text {
+    transform: rotate(45deg);
+    transform-origin: top left;
+    white-space: nowrap;
+}
