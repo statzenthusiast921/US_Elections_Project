@@ -2737,5 +2737,5 @@ def toggle_modal6(n1, n2, is_open):
 
 #app.run_server(host='0.0.0.0',port='8059')
 if __name__=='__main__':
-    #app.run_server()
-    app.run_server(host="0.0.0.0", port=10000)
+    app.run_server()
+    #app.run_server(host="0.0.0.0", port=10000)
