@@ -2515,6 +2515,10 @@ def pred_next_election_vs_last_election_results(radio_select, state_select):
     preds2028['win_updated_preds'] = np.where(preds2028['dem_votes']>preds2028['gop_votes'], 'DEM','GOP')
 
     results2024 = preds[['state_name','county_name','fips_code_lz','noabs_margin_actuals','win_updated_actuals']]
+    #----- Update St. to Saint
+    results2024['county_name'] = results2024['county_name'].str.replace('St.', 'Saint')
+
+    
     results2028 = preds2028[['state_name','county_name','fips_code_lz','noabs_margin_preds','win_updated_preds']]
 
     compare_results = pd.merge(results2024, results2028, how = 'left', on = ['state_name','county_name','fips_code_lz'])
