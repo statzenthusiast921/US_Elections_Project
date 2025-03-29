@@ -9,6 +9,7 @@ The goal of this project was to examine the historical vote for the US President
 - Predict the results of the 2024 and 2028 US Presidential election at a county level
 
 ### App
+Click [here](https://us-elections-project.onrender.com/) to view the app.  It might need a few minutes to "wake up" if it has been idle for awhile.
 
 
 ### Data
