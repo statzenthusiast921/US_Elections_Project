@@ -6,7 +6,10 @@ The goal of this project was to examine the historical vote for the US President
 
 - Understand how the US vote for President has changed over time
 - Understand the characteristics of counties that vote similarly
-- Predict the results of the 2024 US Presidential election at a county level
+- Predict the results of the 2024 and 2028 US Presidential election at a county level
+
+### App
+
 
 ### Data
 - [Github - County level results (1960-2016)](https://github.com/cilekagaci/us-presidential-county-1960-2016)
