@@ -354,7 +354,7 @@ app.layout = html.Div([
                         html.P(dcc.Markdown('''**What is the purpose of this dashboard?**'''),style={'color':'white'}),
                    ],style={'text-decoration': 'underline'}),
                    html.Div([
-                       html.P("This dashboard attempts to answer several questions:",style={'color':'white'}),
+                       html.P("This dashboard attempts to answer several questions:"),
                        html.P("1.) How has the United States vote for President has changed over time?"),
                        html.P("2.) What are the characteristics of counties that vote similarly?"),
                        html.P("3.) What will the results of the next election look like?")
