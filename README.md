@@ -2,7 +2,7 @@
 
 ### Description
 
-The goal of this project was to examine the historical vote for the US President from 1960 through 2020 at a national, state, and county level.   Voting data was collected from multiple Github repositories.  Socioeconomic data was collected from the Agency for Healthcare Research and Quality.  The following bullets list out my main objectives of this project:
+The goal of this project was to examine the historical vote for the US President from 1960 through 2024 at a national, state, and county level.   Voting data was collected from multiple Github repositories.  Socioeconomic data was collected from the Agency for Healthcare Research and Quality.  The following bullets list out my main objectives of this project:
 
 - Understand how the US vote for President has changed over time
 - Understand the characteristics of counties that vote similarly
@@ -17,6 +17,9 @@ Click [here](https://us-elections-project.onrender.com/) to view the app.  It mi
 - [Github - County level results (2020)](https://github.com/tonmcg/US_County_Level_Election_Results_08-20)
 - [Agency for Healthcare Research and Quality - County level socioeconomic data](https://www.ahrq.gov/sdoh/data-analytics/sdoh-data.html)
 - [Github - Estimated county level results for Alaska](https://github.com/tonmcg/US_County_Level_Election_Results_08-20/issues/2)
+
+### 2024 Evaluation
+- In the original version of this app, I finished it with a set of county level predictions for the 2024 election using a series of ~3000 Poisson regression models (one for each county).  Once the data was available earlier this year (2025), I created a comparison of actual margins vs. predicted margins to identify how close I got with the predictions.  
 
 ### Challenges
 
